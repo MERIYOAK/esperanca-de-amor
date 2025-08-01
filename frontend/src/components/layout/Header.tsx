@@ -161,7 +161,7 @@ const Header = () => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
               <img 
-                src="/src/images/shop-logo.png" 
+                src="/shop-logo.png" 
                 alt="Esperança de Amor Logo" 
                 className="h-10 w-auto mr-2"
               />

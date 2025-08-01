@@ -44,7 +44,9 @@ const corsOptions = {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
+    // Get allowed origins from environment variables
     const allowedOrigins = [
+      // Development origins
       'http://localhost:3000',
       'http://localhost:5173', 
       'http://localhost:8080',
@@ -54,11 +56,18 @@ const corsOptions = {
       'http://127.0.0.1:8080',
       'http://127.0.0.1:4173'
     ];
+
+    // Add production origins from environment variable
+    if (process.env.ALLOWED_ORIGINS) {
+      const productionOrigins = process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim());
+      allowedOrigins.push(...productionOrigins);
+    }
     
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
       console.log('CORS blocked origin:', origin);
+      console.log('Allowed origins:', allowedOrigins);
       callback(new Error('Not allowed by CORS'));
     }
   },
