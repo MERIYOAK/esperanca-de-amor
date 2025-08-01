@@ -15,6 +15,8 @@ import Cart from "./pages/Cart";
 import ProductDetail from "./pages/ProductDetail";
 import Wishlist from "./pages/Wishlist";
 import Login from "./pages/Login";
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
 import Offers from "./pages/Offers";
 import OfferDetail from "./pages/OfferDetail";
 import AnnouncementDetail from "./pages/AnnouncementDetail";
@@ -50,6 +52,8 @@ const App = () => (
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/wishlist" element={<Wishlist />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/admin-login" element={<AdminLogin />} />
+                <Route path="/admin-dashboard" element={<AdminDashboard />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

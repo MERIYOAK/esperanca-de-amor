@@ -37,10 +37,7 @@ const HeroSection = () => {
       // Change image after a brief delay to allow for transition
       setTimeout(() => {
         setCurrentImageIndex((prev) => (prev + 1) % images.length);
-        setBackgroundImageIndex((prev) => {
-          if (prev === -1) return 0;
-          return (prev + 1) % images.length;
-        });
+        setBackgroundImageIndex((prev) => (prev + 1) % images.length);
         setCurrentAnimation(animationTypes[(currentImageIndex + 1) % animationTypes.length]);
         setIsTransitioning(false);
       }, 300);
@@ -53,7 +50,7 @@ const HeroSection = () => {
     <section 
       className="relative min-h-[90vh] flex items-center overflow-hidden transition-all duration-1000 pb-6 md:pb-0 pt-6 md:pt-0"
       style={{
-        backgroundImage: backgroundImageIndex >= 0 ? `url(${images[backgroundImageIndex]})` : 'none',
+        backgroundImage: `url(${images[backgroundImageIndex]})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
