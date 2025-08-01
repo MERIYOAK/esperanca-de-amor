@@ -35,7 +35,7 @@ const PromoBanner = () => {
     const fetchPromoBanners = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('http://localhost:5000/api/public/promo-banners/active');
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/public/promo-banners/active`);
         
         if (response.ok) {
           const data = await response.json();

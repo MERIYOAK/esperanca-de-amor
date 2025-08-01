@@ -121,7 +121,7 @@ const Cart = () => {
       await clearCart();
       
       // Call backend checkout endpoint to create order
-      const response = await fetch('http://localhost:5000/api/cart/checkout', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/cart/checkout`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

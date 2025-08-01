@@ -72,7 +72,7 @@ const OfferDetail = () => {
 
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:5000/api/offers/${id}`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/offers/${id}`);
         
         if (response.ok) {
           const data = await response.json();
@@ -157,7 +157,7 @@ const OfferDetail = () => {
     try {
       setClaimingOffer(true);
 
-      const response = await fetch('http://localhost:5000/api/offers/claim', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/offers/claim`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

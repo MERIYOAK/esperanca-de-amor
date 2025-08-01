@@ -56,7 +56,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const { user, token } = useAuth();
   const { toast } = useToast();
 
-  const API_BASE_URL = 'http://localhost:5000/api';
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   // Demo products for testing (since we don't have real products in DB yet)
   const demoProducts = {

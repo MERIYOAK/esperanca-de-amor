@@ -29,7 +29,7 @@ const NewsletterAnnouncements = () => {
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/public/announcements/active');
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/public/announcements/active`);
         
         if (response.ok) {
           const data = await response.json();

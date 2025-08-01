@@ -57,7 +57,7 @@ const WeeklyOffers = () => {
       try {
         setIsLoading(true);
         console.log('WeeklyOffers: Fetching offers from API...');
-        const response = await fetch('http://localhost:5000/api/offers', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/offers`, {
           signal: abortController.signal,
           headers: {
             'Content-Type': 'application/json',
@@ -161,7 +161,7 @@ const WeeklyOffers = () => {
       setClaimingOffer(offer._id);
 
       // Call the backend API to claim the offer
-      const response = await fetch('http://localhost:5000/api/offers/claim', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/offers/claim`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
