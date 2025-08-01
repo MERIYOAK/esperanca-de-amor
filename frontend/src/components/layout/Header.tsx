@@ -8,7 +8,6 @@ import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/hooks/use-toast';
 import UserMenu from '@/components/ui/UserMenu';
 import { useLocation } from 'react-router-dom';
-import logo from '../../../public/shop-logo.png';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -162,7 +161,7 @@ const Header = () => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
               <img 
-                src={logo} 
+                src="/shop-logo.png" 
                 alt="Esperança de Amor Logo" 
                 className="h-10 w-auto mr-2"
               />
