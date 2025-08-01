@@ -30,42 +30,42 @@ const TestimonialSection = () => {
   ];
 
   return (
-    <section className="py-20">
+    <section className="py-12 md:py-20">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16 animate-fadeInUp">
-          <h2 className="text-4xl font-bold mb-4">What Our Customers Say</h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+        <div className="text-center mb-8 md:mb-16 animate-fadeInUp">
+          <h2 className="text-2xl md:text-4xl font-bold mb-2 md:mb-4">What Our Customers Say</h2>
+          <p className="text-base md:text-xl text-muted-foreground max-w-2xl mx-auto">
             Don't just take our word for it. Here's what our satisfied customers have to say about us.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8">
           {testimonials.map((testimonial, index) => (
             <Card 
               key={testimonial.id} 
               className={`group hover:shadow-glow transition-all duration-300 hover:-translate-y-2 animate-fadeInUp`}
               style={{ animationDelay: `${index * 200}ms` }}
             >
-              <CardContent className="p-6 relative">
-                <Quote className="absolute top-4 right-4 h-8 w-8 text-primary/20" />
+              <CardContent className="p-4 md:p-6 relative">
+                <Quote className="absolute top-2 md:top-4 right-2 md:right-4 h-6 w-6 md:h-8 md:w-8 text-primary/20" />
                 
-                <div className="flex items-center mb-4">
+                <div className="flex items-center mb-3 md:mb-4">
                   <img
                     src={testimonial.avatar}
                     alt={testimonial.name}
-                    className="w-12 h-12 rounded-full object-cover mr-4"
+                    className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover mr-3 md:mr-4"
                   />
                   <div>
-                    <h4 className="font-semibold">{testimonial.name}</h4>
-                    <p className="text-sm text-muted-foreground">{testimonial.location}</p>
+                    <h4 className="font-semibold text-sm md:text-base">{testimonial.name}</h4>
+                    <p className="text-xs md:text-sm text-muted-foreground">{testimonial.location}</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center mb-4">
+                <div className="flex items-center mb-3 md:mb-4">
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
-                      className={`h-4 w-4 ${
+                      className={`h-3 w-3 md:h-4 md:w-4 ${
                         i < testimonial.rating
                           ? 'fill-yellow-400 text-yellow-400'
                           : 'text-gray-300'
@@ -74,7 +74,7 @@ const TestimonialSection = () => {
                   ))}
                 </div>
                 
-                <p className="text-muted-foreground italic">
+                <p className="text-xs md:text-sm text-muted-foreground italic">
                   "{testimonial.text}"
                 </p>
               </CardContent>

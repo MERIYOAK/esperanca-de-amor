@@ -43,9 +43,16 @@ const productSchema = new mongoose.Schema({
     }
   }],
   category: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Category',
-    required: [true, 'Product category is required']
+    type: String,
+    required: [true, 'Product category is required'],
+    enum: {
+      values: [
+        'foodstuffs', 'household-items', 'beverages', 'electronics', 
+        'construction-materials', 'plastics', 'cosmetics', 'powder-detergent', 
+        'liquid-detergent', 'juices', 'dental-care', 'beef'
+      ],
+      message: 'Invalid category. Please select a valid category from the list.'
+    }
   },
   stock: {
     type: Number,

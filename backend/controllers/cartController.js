@@ -19,7 +19,7 @@ const getCart = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: { cart }
+      data: cart
     });
   } catch (error) {
     next(error);
@@ -74,7 +74,7 @@ const addToCart = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: 'Item added to cart successfully',
-      data: { cart }
+      data: cart
     });
   } catch (error) {
     next(error);
@@ -82,11 +82,11 @@ const addToCart = async (req, res, next) => {
 };
 
 // @desc    Remove item from cart
-// @route   DELETE /api/cart/remove/:productId
+// @route   DELETE /api/cart/:itemId
 // @access  Private
 const removeFromCart = async (req, res, next) => {
   try {
-    const { productId } = req.params;
+    const { itemId } = req.params;
 
     const cart = await Cart.findOne({ user: req.user._id });
     if (!cart) {
@@ -96,7 +96,18 @@ const removeFromCart = async (req, res, next) => {
       });
     }
 
-    await cart.removeItem(productId);
+    // Find the item by its ID and remove it
+    const itemIndex = cart.items.findIndex(item => item._id.toString() === itemId);
+    if (itemIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Item not found in cart'
+      });
+    }
+
+    cart.items.splice(itemIndex, 1);
+    cart.updatedAt = new Date();
+    await cart.save();
 
     // Populate product details
     await cart.populate({
@@ -107,7 +118,7 @@ const removeFromCart = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: 'Item removed from cart successfully',
-      data: { cart }
+      data: cart
     });
   } catch (error) {
     next(error);
@@ -115,11 +126,11 @@ const removeFromCart = async (req, res, next) => {
 };
 
 // @desc    Update item quantity
-// @route   PUT /api/cart/update/:productId
+// @route   PUT /api/cart/:itemId
 // @access  Private
 const updateCartItem = async (req, res, next) => {
   try {
-    const { productId } = req.params;
+    const { itemId } = req.params;
     const { quantity } = req.body;
 
     if (!quantity || quantity < 1) {
@@ -129,8 +140,25 @@ const updateCartItem = async (req, res, next) => {
       });
     }
 
+    const cart = await Cart.findOne({ user: req.user._id });
+    if (!cart) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cart not found'
+      });
+    }
+
+    // Find the item by its ID
+    const item = cart.items.find(item => item._id.toString() === itemId);
+    if (!item) {
+      return res.status(404).json({
+        success: false,
+        message: 'Item not found in cart'
+      });
+    }
+
     // Check product stock
-    const product = await Product.findById(productId);
+    const product = await Product.findById(item.product);
     if (!product) {
       return res.status(404).json({
         success: false,
@@ -145,15 +173,10 @@ const updateCartItem = async (req, res, next) => {
       });
     }
 
-    const cart = await Cart.findOne({ user: req.user._id });
-    if (!cart) {
-      return res.status(404).json({
-        success: false,
-        message: 'Cart not found'
-      });
-    }
-
-    await cart.updateQuantity(productId, quantity);
+    // Update the quantity
+    item.quantity = quantity;
+    cart.updatedAt = new Date();
+    await cart.save();
 
     // Populate product details
     await cart.populate({
@@ -164,7 +187,7 @@ const updateCartItem = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: 'Cart updated successfully',
-      data: { cart }
+      data: cart
     });
   } catch (error) {
     next(error);
@@ -201,6 +224,7 @@ const clearCart = async (req, res, next) => {
 // @access  Private
 const checkout = async (req, res, next) => {
   try {
+    console.log('🛒 Starting checkout process...');
     const { shippingAddress, paymentMethod, notes } = req.body;
 
     // Get user cart with populated products
@@ -209,6 +233,9 @@ const checkout = async (req, res, next) => {
         path: 'items.product',
         select: 'name price originalPrice images isOnSale discount stock'
       });
+
+    console.log('📦 Cart found:', cart ? 'Yes' : 'No');
+    console.log('📦 Cart items count:', cart?.items?.length || 0);
 
     if (!cart || cart.items.length === 0) {
       return res.status(400).json({
@@ -219,6 +246,7 @@ const checkout = async (req, res, next) => {
 
     // Validate stock for all items
     for (const item of cart.items) {
+      console.log(`🔍 Checking stock for ${item.product.name}: ${item.product.stock} available, ${item.quantity} requested`);
       if (item.product.stock < item.quantity) {
         return res.status(400).json({
           success: false,
@@ -229,21 +257,45 @@ const checkout = async (req, res, next) => {
 
     // Calculate total amount
     const totalAmount = cart.items.reduce((total, item) => {
-      const price = item.product.isOnSale ? item.product.salePrice : item.product.price;
+      const price = item.product.isOnSale && item.product.discount 
+        ? item.product.price - (item.product.price * item.product.discount / 100)
+        : item.product.price;
       return total + (price * item.quantity);
     }, 0);
 
+    console.log('💰 Total amount calculated:', totalAmount);
+
     // Create order items
-    const orderItems = cart.items.map(item => ({
-      product: item.product._id,
-      name: item.product.name,
-      price: item.product.isOnSale ? item.product.salePrice : item.product.price,
-      quantity: item.quantity,
-      total: (item.product.isOnSale ? item.product.salePrice : item.product.price) * item.quantity
-    }));
+    const orderItems = cart.items.map(item => {
+      const price = item.product.isOnSale && item.product.discount 
+        ? item.product.price - (item.product.price * item.product.discount / 100)
+        : item.product.price;
+      
+      return {
+        product: item.product._id,
+        name: item.product.name,
+        price: price,
+        quantity: item.quantity,
+        total: price * item.quantity
+      };
+    });
+
+    console.log('📋 Order items created:', orderItems.length);
+
+    // Generate order number
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const orderNumber = `EA${year}${month}${day}${timestamp.toString().slice(-6)}${random}`;
+
+    console.log('🔢 Order number generated:', orderNumber);
 
     // Create order
     const order = await Order.create({
+      orderNumber,
       user: req.user._id,
       items: orderItems,
       totalAmount,
@@ -251,6 +303,8 @@ const checkout = async (req, res, next) => {
       paymentMethod,
       notes
     });
+
+    console.log('✅ Order created successfully:', order._id);
 
     // Generate WhatsApp message
     await order.generateWhatsAppMessage();
@@ -265,8 +319,7 @@ const checkout = async (req, res, next) => {
       await item.product.decreaseStock(item.quantity);
     }
 
-    // Clear cart
-    await cart.clearCart();
+    console.log('🎉 Checkout completed successfully');
 
     res.status(201).json({
       success: true,
@@ -278,6 +331,7 @@ const checkout = async (req, res, next) => {
       }
     });
   } catch (error) {
+    console.error('❌ Checkout error:', error);
     next(error);
   }
 };

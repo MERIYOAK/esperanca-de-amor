@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/hooks/use-toast';
 import UserMenu from '@/components/ui/UserMenu';
+import { useLocation } from 'react-router-dom';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -19,6 +20,7 @@ const Header = () => {
   const { cartItems } = useCart();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Calculate cart count
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
@@ -107,18 +109,9 @@ const Header = () => {
         variant: "destructive",
       });
       navigate('/login');
-    }
-  };
-
-  const handleWishlistClick = (e: React.MouseEvent) => {
-    if (!user) {
-      e.preventDefault();
-      toast({
-        title: "Authentication required",
-        description: "Please log in to view your wishlist",
-        variant: "destructive",
-      });
-      navigate('/login');
+    } else {
+      // Navigate to cart if user is authenticated
+      navigate('/cart');
     }
   };
 
@@ -155,6 +148,7 @@ const Header = () => {
   const navItems = [
     { name: 'Home', href: '/' },
     { name: 'Shop', href: '/shop' },
+    { name: 'Offers', href: '/offers' },
     { name: 'About', href: '/about' },
     { name: 'Contact', href: '/contact' },
   ];
@@ -162,11 +156,16 @@ const Header = () => {
   return (
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-12 md:h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <Link to="/">
-              <h1 className="text-2xl font-bold text-red-600 hover:text-red-700 transition-colors duration-200">
+            <Link to="/" className="flex items-center">
+              <img 
+                src="/src/images/shop-logo.png" 
+                alt="Esperança de Amor Logo" 
+                className="h-10 w-auto mr-2"
+              />
+              <h1 className="text-2xl font-bold text-red-600 [text-shadow:_0_0_20px_rgba(220,38,38,0.8),_0_0_40px_rgba(220,38,38,0.6),_0_0_60px_rgba(220,38,38,0.4)] hidden md:block">
                 Esperança de Amor
               </h1>
             </Link>
@@ -174,16 +173,46 @@ const Header = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className="text-foreground hover:text-primary transition-colors duration-200 relative group"
-              >
-                {item.name}
-                <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-primary transition-all duration-200 group-hover:w-full"></span>
-              </Link>
-            ))}
+            <Link
+              to="/"
+              className={`text-sm font-medium transition-all duration-200 hover:text-red-600 hover:scale-105 ${
+                location.pathname === '/' ? 'text-red-600' : 'text-gray-500'
+              }`}
+            >
+              Home
+            </Link>
+            <Link
+              to="/shop"
+              className={`text-sm font-medium transition-all duration-200 hover:text-red-600 hover:scale-105 ${
+                location.pathname === '/shop' ? 'text-red-600' : 'text-gray-500'
+              }`}
+            >
+              Shop
+            </Link>
+            <Link
+              to="/offers"
+              className={`text-sm font-medium transition-all duration-200 hover:text-red-600 hover:scale-105 ${
+                location.pathname === '/offers' ? 'text-red-600' : 'text-gray-500'
+              }`}
+            >
+              Offers
+            </Link>
+            <Link
+              to="/about"
+              className={`text-sm font-medium transition-all duration-200 hover:text-red-600 hover:scale-105 ${
+                location.pathname === '/about' ? 'text-red-600' : 'text-gray-500'
+              }`}
+            >
+              About
+            </Link>
+            <Link
+              to="/contact"
+              className={`text-sm font-medium transition-all duration-200 hover:text-red-600 hover:scale-105 ${
+                location.pathname === '/contact' ? 'text-red-600' : 'text-gray-500'
+              }`}
+            >
+              Contact
+            </Link>
           </nav>
 
           {/* Search Bar */}
@@ -218,13 +247,11 @@ const Header = () => {
           <div className="flex items-center space-x-4">
             {/* User Menu */}
             <div className="relative" ref={userMenuRef}>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="hover:bg-secondary hover:scale-105 transition-all duration-200 relative overflow-hidden"
+              <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 disabled={isLoading}
                 title={user ? `Logged in as ${user.name}` : 'User menu'}
+                className="relative p-2 text-gray-600 hover:text-red-600 hover:scale-105 transition-all duration-200"
               >
                 {isLoading ? (
                   <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -232,34 +259,37 @@ const Header = () => {
                   <img 
                     src={user.avatar} 
                     alt={user.name}
-                    className="h-8 w-8 rounded-full object-cover border border-border transition-transform duration-200 hover:scale-110"
+                    className="h-6 w-6 rounded-full object-cover border border-border transition-transform duration-200 hover:scale-110"
                     onError={() => setImageError(true)}
                   />
                 ) : user && user.name ? (
-                  <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center border border-border transition-transform duration-200 hover:scale-110">
+                  <div className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center border border-border transition-transform duration-200 hover:scale-110">
                     {getUserInitials(user.name)}
                   </div>
                 ) : (
                   <User className="h-6 w-6" />
                 )}
-              </Button>
+              </button>
               <UserMenu 
                 isOpen={isUserMenuOpen} 
                 onClose={() => setIsUserMenuOpen(false)} 
               />
             </div>
 
-            {/* Cart */}
-            <Link to="/cart">
-              <Button variant="ghost" size="icon" className="relative hover:bg-secondary hover:scale-105 transition-all duration-200" onClick={handleCartClick}>
-                <ShoppingCart className="h-5 w-5" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
-                    {cartCount}
-                  </span>
-                )}
-              </Button>
-            </Link>
+            {/* Cart Icon */}
+            <button
+              onClick={handleCartClick}
+              className="relative p-2 text-gray-600 hover:text-red-600 transition-colors duration-200 hover:scale-105"
+              aria-label="Shopping cart"
+              title={user ? "View your cart" : "Login to view cart"}
+            >
+              <ShoppingCart className="h-6 w-6" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
+            </button>
 
             {/* Mobile menu button */}
             <Button
@@ -275,8 +305,8 @@ const Header = () => {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 animate-fadeInUp">
-            <nav className="flex flex-col space-y-4">
+          <div className="md:hidden absolute top-full left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/95 border-b border-border py-4 animate-fadeInUp z-50">
+            <nav className="flex flex-col space-y-4 px-4">
               {navItems.map((item) => (
                 <Link
                   key={item.name}

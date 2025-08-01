@@ -1,12 +1,13 @@
 import { Facebook, Instagram, Twitter, Mail, Phone, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 
 const Footer = () => {
+  const currentYear = new Date().getFullYear();
+
   return (
-    <footer className="bg-foreground text-background mt-20">
+    <footer className="bg-foreground text-background">
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Company Info */}
           <div className="animate-slideInLeft">
             <h3 className="text-xl font-bold mb-4 text-primary-light">Esperança de Amor</h3>
@@ -65,29 +66,26 @@ const Footer = () => {
               </div>
             </div>
           </div>
-
-          {/* Newsletter */}
-          <div className="animate-slideInRight">
-            <h4 className="text-lg font-semibold mb-4 text-primary-light">Newsletter</h4>
-            <p className="text-background/80 mb-4">
-              Stay updated with our latest offers and products.
-            </p>
-            <div className="space-y-3">
-              <Input
-                type="email"
-                placeholder="Enter your email"
-                className="bg-background/10 border-background/20 text-background placeholder:text-background/60"
-              />
-              <Button className="w-full bg-primary hover:bg-primary-dark transition-all duration-200 hover:scale-105">
-                Subscribe
-              </Button>
-            </div>
-          </div>
         </div>
 
         <div className="border-t border-background/20 mt-12 pt-8 text-center">
           <p className="text-background/60">
-            © 2024 Esperança de Amor. All rights reserved.
+            © {currentYear} Esperança de Amor. All rights reserved.
+          </p>
+          <p className="text-background/60 mt-2">
+            Developed by{' '}
+            <a 
+              href="https://meronvault.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary-light hover:text-primary transition-colors duration-200 font-semibold animate-glow"
+              style={{
+                animation: 'glow 2s ease-in-out infinite alternate',
+                textShadow: '0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor'
+              }}
+            >
+              MERONI
+            </a>
           </p>
         </div>
       </div>

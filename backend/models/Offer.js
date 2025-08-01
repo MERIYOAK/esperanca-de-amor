@@ -18,9 +18,16 @@ const offerSchema = new mongoose.Schema({
     max: 100
   },
   category: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Category',
-    required: true
+    type: String,
+    required: true,
+    enum: {
+      values: [
+        'foodstuffs', 'household-items', 'beverages', 'electronics', 
+        'construction-materials', 'plastics', 'cosmetics', 'powder-detergent', 
+        'liquid-detergent', 'juices', 'dental-care', 'beef'
+      ],
+      message: 'Invalid category. Please select a valid category from the list.'
+    }
   },
   productIds: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -41,7 +48,7 @@ const offerSchema = new mongoose.Schema({
   },
   image: {
     type: String,
-    required: true
+    required: false
   },
   maxUses: {
     type: Number,
@@ -60,7 +67,16 @@ const offerSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  }]
+  }],
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Admin',
+    required: true
+  },
+  updatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Admin'
+  }
 }, {
   timestamps: true
 });

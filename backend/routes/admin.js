@@ -1,265 +1,135 @@
 const express = require('express');
-const User = require('../models/User');
-const Product = require('../models/Product');
-const Order = require('../models/Order');
-const Newsletter = require('../models/Newsletter');
-const { protect, isAdmin } = require('../middleware/auth');
-
 const router = express.Router();
+const { protectAdmin, authorizeAdmin } = require('../middleware/adminAuth');
+const { uploadSingle, uploadMultiple } = require('../utils/s3Upload');
 
-// All admin routes require authentication and admin role
-router.use(protect);
-router.use(isAdmin);
+// Import controllers
+const {
+  getProducts,
+  getProduct,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  bulkDeleteProducts,
+  updateProductStock
+} = require('../controllers/adminProductController');
 
-// @desc    Get admin dashboard statistics
-// @route   GET /api/admin/dashboard
-// @access  Private/Admin
-const getDashboardStats = async (req, res, next) => {
-  try {
-    // User statistics
-    const totalUsers = await User.countDocuments();
-    const activeUsers = await User.countDocuments({ isActive: true });
-    const adminUsers = await User.countDocuments({ role: 'admin' });
-    const customerUsers = await User.countDocuments({ role: 'customer' });
+const {
+  getAnnouncements,
+  getAnnouncement,
+  createAnnouncement,
+  updateAnnouncement,
+  deleteAnnouncement,
+  bulkDeleteAnnouncements,
+  toggleAnnouncementStatus,
+  getActiveAnnouncements
+} = require('../controllers/adminAnnouncementController');
 
-    // Product statistics
-    const totalProducts = await Product.countDocuments();
-    const activeProducts = await Product.countDocuments({ isActive: true });
-    const featuredProducts = await Product.countDocuments({ featured: true });
-    const productsOnSale = await Product.countDocuments({ isOnSale: true });
+const {
+  getNewsletterSubscribers,
+  getNewsletterSubscriber,
+  sendNewsletterUpdate,
+  exportSubscribers,
+  updateSubscriberStatus,
+  deleteSubscriber,
+  bulkDeleteSubscribers,
+  getNewsletterStats
+} = require('../controllers/adminNewsletterController');
 
-    // Order statistics
-    const totalOrders = await Order.countDocuments();
-    const pendingOrders = await Order.countDocuments({ status: 'pending' });
-    const deliveredOrders = await Order.countDocuments({ status: 'delivered' });
-    const cancelledOrders = await Order.countDocuments({ status: 'cancelled' });
+// Import existing offer controller
+const {
+  getOffers,
+  getOffer,
+  createOffer,
+  updateOffer,
+  deleteOffer
+} = require('../controllers/offerController');
 
-    // Revenue statistics
-    const revenueData = await Order.aggregate([
-      { $match: { status: { $ne: 'cancelled' } } },
-      { $group: { _id: null, total: { $sum: '$totalAmount' } } }
-    ]);
-    const totalRevenue = revenueData.length > 0 ? revenueData[0].total : 0;
+// Import PromoBanner controller
+const {
+  getPromoBanners,
+  getPromoBanner,
+  createPromoBanner,
+  updatePromoBanner,
+  deletePromoBanner,
+  togglePromoBanner
+} = require('../controllers/promoBannerController');
 
-    // Newsletter statistics
-    const totalSubscribers = await Newsletter.countDocuments();
-    const activeSubscribers = await Newsletter.countDocuments({ isActive: true });
+// Import Analytics controller
+const {
+  getAnalytics,
+  getSalesTrend,
+  exportAnalytics
+} = require('../controllers/adminAnalyticsController');
 
-    // Recent data
-    const recentUsers = await User.find()
-      .select('name email createdAt')
-      .sort({ createdAt: -1 })
-      .limit(5);
+// Import Order controller
+const {
+  getOrders,
+  getOrder,
+  updateOrderStatus,
+  getOrderStats,
+  exportOrders
+} = require('../controllers/adminOrderController');
 
-    const recentOrders = await Order.find()
-      .populate('user', 'name email')
-      .select('orderNumber totalAmount status createdAt')
-      .sort({ createdAt: -1 })
-      .limit(5);
+// Public announcement route (for frontend) - NO AUTH REQUIRED
+router.get('/announcements/public/active', getActiveAnnouncements);
 
-    const recentProducts = await Product.find()
-      .select('name price stock createdAt')
-      .sort({ createdAt: -1 })
-      .limit(5);
+// Apply admin protection to all routes EXCEPT the public announcement route
+router.use(protectAdmin);
 
-    res.status(200).json({
-      success: true,
-      data: {
-        users: {
-          total: totalUsers,
-          active: activeUsers,
-          admin: adminUsers,
-          customer: customerUsers,
-          recent: recentUsers
-        },
-        products: {
-          total: totalProducts,
-          active: activeProducts,
-          featured: featuredProducts,
-          onSale: productsOnSale,
-          recent: recentProducts
-        },
-        orders: {
-          total: totalOrders,
-          pending: pendingOrders,
-          delivered: deliveredOrders,
-          cancelled: cancelledOrders,
-          recent: recentOrders
-        },
-        revenue: {
-          total: totalRevenue
-        },
-        newsletter: {
-          total: totalSubscribers,
-          active: activeSubscribers
-        }
-      }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+// Product Management Routes
+router.get('/products', getProducts);
+router.get('/products/:id', getProduct);
+router.post('/products', uploadMultiple('products', 5), createProduct);
+router.put('/products/:id', uploadMultiple('products', 5), updateProduct);
+router.delete('/products/:id', deleteProduct);
+router.delete('/products/bulk', bulkDeleteProducts);
+router.patch('/products/:id/stock', updateProductStock);
 
-// @desc    Get admin analytics
-// @route   GET /api/admin/analytics
-// @access  Private/Admin
-const getAnalytics = async (req, res, next) => {
-  try {
-    const { period = '30' } = req.query;
-    const days = parseInt(period);
+// Announcement Management Routes
+router.get('/announcements', getAnnouncements);
+router.get('/announcements/:id', getAnnouncement);
+router.post('/announcements', uploadMultiple('announcements', 3), createAnnouncement);
+router.put('/announcements/:id', uploadMultiple('announcements', 3), updateAnnouncement);
+router.delete('/announcements/:id', deleteAnnouncement);
+router.delete('/announcements/bulk', bulkDeleteAnnouncements);
+router.patch('/announcements/:id/toggle', toggleAnnouncementStatus);
 
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+// Offer Management Routes
+router.get('/offers', getOffers);
+router.get('/offers/:id', getOffer);
+router.post('/offers', uploadSingle('offers'), createOffer);
+router.put('/offers/:id', uploadSingle('offers'), updateOffer);
+router.delete('/offers/:id', deleteOffer);
 
-    // User registration trend
-    const userTrend = await User.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: startDate }
-        }
-      },
-      {
-        $group: {
-          _id: {
-            $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
-          },
-          count: { $sum: 1 }
-        }
-      },
-      {
-        $sort: { _id: 1 }
-      }
-    ]);
+// Newsletter Management Routes
+router.get('/newsletter/subscribers', getNewsletterSubscribers);
+router.get('/newsletter/subscribers/:id', getNewsletterSubscriber);
+router.post('/newsletter/send', sendNewsletterUpdate);
+router.get('/newsletter/export', exportSubscribers);
+router.patch('/newsletter/subscribers/:id/status', updateSubscriberStatus);
+router.delete('/newsletter/subscribers/:id', deleteSubscriber);
+router.delete('/newsletter/subscribers/bulk', bulkDeleteSubscribers);
+router.get('/newsletter/stats', getNewsletterStats);
 
-    // Order trend
-    const orderTrend = await Order.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: startDate }
-        }
-      },
-      {
-        $group: {
-          _id: {
-            $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
-          },
-          count: { $sum: 1 },
-          revenue: { $sum: '$totalAmount' }
-        }
-      },
-      {
-        $sort: { _id: 1 }
-      }
-    ]);
+// PromoBanner Management Routes
+router.get('/promo-banners', getPromoBanners);
+router.get('/promo-banners/:id', getPromoBanner);
+router.post('/promo-banners', createPromoBanner);
+router.put('/promo-banners/:id', updatePromoBanner);
+router.delete('/promo-banners/:id', deletePromoBanner);
+router.patch('/promo-banners/:id/toggle', togglePromoBanner);
 
-    // Top selling products
-    const topProducts = await Order.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: startDate },
-          status: { $ne: 'cancelled' }
-        }
-      },
-      {
-        $unwind: '$items'
-      },
-      {
-        $group: {
-          _id: '$items.product',
-          totalQuantity: { $sum: '$items.quantity' },
-          totalRevenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
-        }
-      },
-      {
-        $lookup: {
-          from: 'products',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'product'
-        }
-      },
-      {
-        $unwind: '$product'
-      },
-      {
-        $project: {
-          name: '$product.name',
-          totalQuantity: 1,
-          totalRevenue: 1
-        }
-      },
-      {
-        $sort: { totalQuantity: -1 }
-      },
-      {
-        $limit: 10
-      }
-    ]);
-
-    res.status(200).json({
-      success: true,
-      data: {
-        userTrend,
-        orderTrend,
-        topProducts
-      }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// @desc    Get system health
-// @route   GET /api/admin/health
-// @access  Private/Admin
-const getSystemHealth = async (req, res, next) => {
-  try {
-    const now = new Date();
-    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-    // Recent activity
-    const recentUsers = await User.countDocuments({ createdAt: { $gte: oneDayAgo } });
-    const recentOrders = await Order.countDocuments({ createdAt: { $gte: oneDayAgo } });
-    const recentProducts = await Product.countDocuments({ createdAt: { $gte: oneDayAgo } });
-
-    // Low stock products
-    const lowStockProducts = await Product.countDocuments({ stock: { $lt: 10 } });
-
-    // Pending orders
-    const pendingOrders = await Order.countDocuments({ status: 'pending' });
-
-    // System status
-    const systemStatus = {
-      database: 'connected',
-      storage: 'operational',
-      email: 'operational',
-      timestamp: now
-    };
-
-    res.status(200).json({
-      success: true,
-      data: {
-        recentActivity: {
-          users: recentUsers,
-          orders: recentOrders,
-          products: recentProducts
-        },
-        alerts: {
-          lowStockProducts,
-          pendingOrders
-        },
-        systemStatus
-      }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Mount routes
-router.get('/dashboard', getDashboardStats);
+// Analytics Routes
 router.get('/analytics', getAnalytics);
-router.get('/health', getSystemHealth);
+router.get('/analytics/sales-trend', getSalesTrend);
+router.get('/analytics/export', exportAnalytics);
+
+// Order Management Routes
+router.get('/orders', getOrders);
+router.get('/orders/:id', getOrder);
+router.patch('/orders/:id/status', updateOrderStatus);
+router.get('/orders/stats', getOrderStats);
+router.get('/orders/export', exportOrders);
 
 module.exports = router; 

@@ -58,7 +58,6 @@ const getProducts = async (req, res, next) => {
     sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
     const products = await Product.find(query)
-      .populate('category', 'name slug')
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort(sortOptions);
@@ -88,8 +87,7 @@ const getProducts = async (req, res, next) => {
 // @access  Public
 const getProduct = async (req, res, next) => {
   try {
-    const product = await Product.findById(req.params.id)
-      .populate('category', 'name slug');
+    const product = await Product.findById(req.params.id);
 
     if (!product) {
       return res.status(404).json({
@@ -172,8 +170,7 @@ const createProduct = async (req, res, next) => {
       images
     });
 
-    const populatedProduct = await Product.findById(product._id)
-      .populate('category', 'name slug');
+    const populatedProduct = await Product.findById(product._id);
 
     res.status(201).json({
       success: true,
@@ -266,8 +263,7 @@ const updateProduct = async (req, res, next) => {
 
     await product.save();
 
-    const updatedProduct = await Product.findById(product._id)
-      .populate('category', 'name slug');
+    const updatedProduct = await Product.findById(product._id);
 
     res.status(200).json({
       success: true,
@@ -320,7 +316,6 @@ const getFeaturedProducts = async (req, res, next) => {
       isActive: true, 
       featured: true 
     })
-      .populate('category', 'name slug')
       .limit(parseInt(limit))
       .sort({ createdAt: -1 });
 
@@ -344,7 +339,6 @@ const getProductsOnSale = async (req, res, next) => {
       isActive: true, 
       isOnSale: true 
     })
-      .populate('category', 'name slug')
       .limit(parseInt(limit))
       .sort({ discount: -1 });
 
@@ -379,7 +373,6 @@ const searchProducts = async (req, res, next) => {
         { tags: { $in: [new RegExp(q, 'i')] } }
       ]
     })
-      .populate('category', 'name slug')
       .limit(parseInt(limit))
       .sort({ rating: -1 });
 

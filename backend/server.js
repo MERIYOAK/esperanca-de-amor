@@ -17,6 +17,8 @@ const newsletterRoutes = require('./routes/newsletter');
 const adminRoutes = require('./routes/admin');
 const wishlistRoutes = require('./routes/wishlist');
 const offerRoutes = require('./routes/offers');
+const adminAuthRoutes = require('./routes/adminAuth');
+const publicRoutes = require('./routes/public');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -36,30 +38,61 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
-// CORS configuration
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-frontend-domain.com'] 
-    : [
-        'http://localhost:3000', 
-        'http://localhost:5173', 
-        'http://localhost:8080',
-        'http://localhost:4173',
-        'http://127.0.0.1:3000',
-        'http://127.0.0.1:5173',
-        'http://127.0.0.1:8080',
-        'http://127.0.0.1:4173'
-      ],
+// Enhanced CORS configuration with better error handling
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:5173', 
+      'http://localhost:8080',
+      'http://localhost:4173',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:8080',
+      'http://127.0.0.1:4173'
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-}));
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Length', 'X-Requested-With'],
+  maxAge: 86400 // 24 hours
+};
 
-// Handle preflight requests
-app.options('*', cors());
+// Apply CORS middleware
+app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+app.options('*', cors(corsOptions));
+
+// Add a middleware to log CORS issues
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Credentials', true);
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  
+  next();
+});
 
 // Rate limiting with enhanced configuration
-const limiter = rateLimit({
+const generalLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
   message: {
@@ -78,8 +111,33 @@ const limiter = rateLimit({
   }
 });
 
+// More lenient rate limiting for public endpoints
+const publicLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 300, // 300 requests per 15 minutes for public endpoints
+  message: {
+    success: false,
+    message: 'Too many requests from this IP, please try again later.',
+    retryAfter: 900
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      message: 'Too many requests from this IP, please try again later.',
+      retryAfter: 900
+    });
+  }
+});
+
 // Apply rate limiting to API routes
-app.use('/api/', limiter);
+app.use('/api/', generalLimiter);
+
+// Apply more lenient rate limiting to specific public endpoints
+app.use('/api/offers', publicLimiter);
+app.use('/api/products', publicLimiter);
+app.use('/api/categories', publicLimiter);
 
 // Body parsing middleware with enhanced error handling
 app.use(express.json({ 
@@ -97,10 +155,22 @@ app.use(express.json({
   }
 }));
 
+// Serve uploaded files statically
+app.use('/ecommerce-esperanca', express.static('ecommerce-esperanca'));
+
 app.use(express.urlencoded({ 
   extended: true, 
   limit: '10mb' 
 }));
+
+// Add multipart form data middleware for file uploads
+app.use((req, res, next) => {
+  if (req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data')) {
+    // Let multer handle multipart form data
+    return next();
+  }
+  next();
+});
 
 // Compression middleware
 app.use(compression());
@@ -168,6 +238,8 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/newsletter', newsletterRoutes);
+app.use('/api/public', publicRoutes); // Public routes (no auth required)
+app.use('/api/admin/auth', adminAuthRoutes); // This should come BEFORE /api/admin
 app.use('/api/admin', adminRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/offers', offerRoutes);

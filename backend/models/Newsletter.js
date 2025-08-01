@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 const newsletterSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'Name is required'],
     trim: true,
     maxlength: [50, 'Name cannot be more than 50 characters']
   },
@@ -23,6 +22,10 @@ const newsletterSchema = new mongoose.Schema({
     default: Date.now
   },
   unsubscribedAt: {
+    type: Date,
+    default: null
+  },
+  resubscribedAt: {
     type: Date,
     default: null
   },
@@ -67,6 +70,7 @@ newsletterSchema.methods.unsubscribe = function() {
 newsletterSchema.methods.resubscribe = function() {
   this.isActive = true;
   this.unsubscribedAt = null;
+  this.resubscribedAt = new Date();
   return this.save();
 };
 

@@ -15,6 +15,11 @@ import Cart from "./pages/Cart";
 import ProductDetail from "./pages/ProductDetail";
 import Wishlist from "./pages/Wishlist";
 import Login from "./pages/Login";
+import Offers from "./pages/Offers";
+import OfferDetail from "./pages/OfferDetail";
+import AnnouncementDetail from "./pages/AnnouncementDetail";
+import ConfirmSubscription from "./pages/ConfirmSubscription";
+import Unsubscribe from "./pages/Unsubscribe";
 import NotFound from "./pages/NotFound";
 import "./utils/envTest"; // Import to run environment variable test
 import "./utils/googleOAuthTest"; // Import to run Google OAuth test
@@ -33,6 +38,11 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/shop" element={<Shop />} />
+                <Route path="/offers" element={<Offers />} />
+                <Route path="/offer/:id" element={<OfferDetail />} />
+                <Route path="/announcement/:id" element={<AnnouncementDetail />} />
+                <Route path="/confirm-subscription/:token" element={<ConfirmSubscription />} />
+                <Route path="/unsubscribe" element={<Unsubscribe />} />
                 <Route path="/product/:id" element={<ProductDetail />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />

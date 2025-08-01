@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Product {
-  id: number;
+  id: string; // Changed from number to string to handle MongoDB ObjectIds
   name: string;
   price: number;
   originalPrice?: number;
@@ -39,8 +39,14 @@ const Shop = () => {
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const searchQuery = searchParams.get('search');
+    const categoryQuery = searchParams.get('category');
+    
     if (searchQuery) {
       setSearchTerm(searchQuery);
+    }
+    
+    if (categoryQuery) {
+      setSelectedCategory(categoryQuery);
     }
   }, [location.search]);
 
@@ -70,6 +76,41 @@ const Shop = () => {
     navigate(location.pathname, { replace: true });
   };
 
+  // Handle category selection
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    
+    // Update URL with category parameter
+    const searchParams = new URLSearchParams(location.search);
+    if (category === 'All') {
+      searchParams.delete('category');
+    } else {
+      searchParams.set('category', category);
+    }
+    
+    // Keep existing search parameter if any
+    if (searchTerm.trim()) {
+      searchParams.set('search', searchTerm);
+    }
+    
+    const newUrl = searchParams.toString() 
+      ? `${location.pathname}?${searchParams.toString()}`
+      : location.pathname;
+    
+    navigate(newUrl, { replace: true });
+  };
+
+  // Format category name for display
+  const formatCategoryName = (category: string) => {
+    if (!category) return 'Unknown Category';
+    
+    // Convert kebab-case to Title Case
+    return category
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   // Fetch products from backend
   useEffect(() => {
     const fetchProducts = async () => {
@@ -83,19 +124,18 @@ const Shop = () => {
           // Check if data.data.products exists
           if (!data.data || !data.data.products || !Array.isArray(data.data.products)) {
             console.error('Invalid API response structure:', data);
-            // Fallback to demo products if backend fails
-            setProducts(demoProducts);
+            setProducts([]);
             return;
           }
           
           // Transform backend products to frontend format
           const transformedProducts = data.data.products.map((product: any, index: number) => ({
-            id: index + 1, // Keep numeric IDs for compatibility
+            id: product._id, // Use actual MongoDB ObjectId
             name: product.name,
             price: product.price,
             originalPrice: product.originalPrice,
             image: product.images?.[0]?.url || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop',
-            category: product.category?.name || 'Unknown Category',
+            category: formatCategoryName(product.category),
             rating: product.rating || 4.5,
             isOnSale: product.isOnSale,
             discount: product.discount
@@ -103,13 +143,12 @@ const Shop = () => {
           
           setProducts(transformedProducts);
         } else {
-          // Fallback to demo products if backend fails
-          setProducts(demoProducts);
+          console.error('Failed to fetch products');
+          setProducts([]);
         }
       } catch (error) {
         console.error('Error fetching products:', error);
-        // Fallback to demo products
-        setProducts(demoProducts);
+        setProducts([]);
       } finally {
         setIsLoading(false);
       }
@@ -118,95 +157,36 @@ const Shop = () => {
     fetchProducts();
   }, []);
 
-  // Demo products as fallback
-  const demoProducts: Product[] = [
-    {
-      id: 1,
-      name: 'Fresh Avocados',
-      price: 2500,
-      originalPrice: 3000,
-      image: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=300&h=300&fit=crop',
-      category: 'Fresh Fruits',
-      rating: 4.8,
-      isOnSale: true,
-      discount: 17
-    },
-    {
-      id: 2,
-      name: 'Premium Coffee Beans',
-      price: 8500,
-      image: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=300&h=300&fit=crop',
-      category: 'Beverages',
-      rating: 4.9,
-      isOnSale: false
-    },
-    {
-      id: 3,
-      name: 'Organic Honey',
-      price: 4200,
-      image: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=300&h=300&fit=crop',
-      category: 'Organic',
-      rating: 4.7,
-      isOnSale: false
-    },
-    {
-      id: 4,
-      name: 'Fresh Fish Selection',
-      price: 6800,
-      originalPrice: 7500,
-      image: 'https://images.unsplash.com/photo-1544943910-4ca6073dd0b4?w=300&h=300&fit=crop',
-      category: 'Seafood',
-      rating: 4.6,
-      isOnSale: true,
-      discount: 9
-    },
-    {
-      id: 5,
-      name: 'Local Palm Oil',
-      price: 3500,
-      image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=300&h=300&fit=crop',
-      category: 'Cooking Oils',
-      rating: 4.8,
-      isOnSale: false
-    },
-    {
-      id: 6,
-      name: 'Imported Wine',
-      price: 12000,
-      originalPrice: 15000,
-      image: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=300&h=300&fit=crop',
-      category: 'Alcoholic Beverages',
-      rating: 4.5,
-      isOnSale: true,
-      discount: 20
-    },
-    {
-      id: 7,
-      name: 'Fresh Pineapple',
-      price: 1800,
-      image: 'https://images.unsplash.com/photo-1587735243615-c03f25aaff15?w=300&h=300&fit=crop',
-      category: 'Fresh Fruits',
-      rating: 4.7,
-      isOnSale: false
-    },
-    {
-      id: 8,
-      name: 'Imported Cheese',
-      price: 5500,
-      originalPrice: 6200,
-      image: 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=300&h=300&fit=crop',
-      category: 'Dairy',
-      rating: 4.6,
-      isOnSale: true,
-      discount: 11
-    }
+  const categories = [
+    'All',
+    'foodstuffs',
+    'household-items', 
+    'beverages',
+    'electronics',
+    'construction-materials',
+    'plastics',
+    'cosmetics',
+    'powder-detergent',
+    'liquid-detergent',
+    'juices',
+    'dental-care',
+    'beef'
   ];
 
-  const categories = ['All', 'Fresh Fruits', 'Beverages', 'Organic', 'Seafood', 'Cooking Oils', 'Alcoholic Beverages', 'Dairy'];
+  // Format category name for display in dropdown
+  const formatCategoryDisplayName = (category: string) => {
+    if (category === 'All') return 'All';
+    
+    // Convert kebab-case to Title Case
+    return category
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+    const matchesCategory = selectedCategory === 'All' || formatCategoryName(product.category) === formatCategoryDisplayName(selectedCategory);
     return matchesSearch && matchesCategory;
   });
 
@@ -225,7 +205,7 @@ const Shop = () => {
     try {
       // For demo purposes, we'll use the product id as a string
       // In a real app, this would be the actual product ID from the backend
-      await addToCart(product.id.toString(), 1);
+      await addToCart(product.id, 1);
     } catch (error) {
       console.error('Error adding to cart:', error);
     }
@@ -242,17 +222,17 @@ const Shop = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-4 md:py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Our Products</h1>
-          <p className="text-muted-foreground text-lg">
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-2">Our Products</h1>
+          <p className="text-muted-foreground text-base md:text-lg">
             Discover our carefully curated selection of premium products
           </p>
         </div>
 
         {/* Filters and Search */}
-        <div className="flex flex-col lg:flex-row gap-4 mb-8">
+        <div className="flex flex-col lg:flex-row gap-3 md:gap-4 mb-6 md:mb-8">
           <div className="flex-1">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -276,15 +256,15 @@ const Shop = () => {
             </div>
           </div>
           
-          <div className="flex items-center space-x-4">
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-48">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+            <Select value={selectedCategory} onValueChange={handleCategoryChange}>
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
                 {categories.map((category) => (
                   <SelectItem key={category} value={category}>
-                    {category}
+                    {formatCategoryDisplayName(category)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -310,9 +290,9 @@ const Shop = () => {
         </div>
 
         {/* Results Count */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 md:mb-6 space-y-2 sm:space-y-0">
           <div>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground text-sm md:text-base">
               Showing {filteredProducts.length} of {products.length} products
               {searchTerm && (
                 <span className="text-primary">
@@ -325,20 +305,20 @@ const Shop = () => {
                 variant="ghost" 
                 size="sm" 
                 onClick={clearSearch}
-                className="text-muted-foreground hover:text-foreground p-0 h-auto"
+                className="text-muted-foreground hover:text-foreground p-0 h-auto text-sm"
               >
                 Clear search
               </Button>
             )}
           </div>
-          <Button onClick={handleViewCart} variant="outline">
+          <Button onClick={handleViewCart} variant="outline" className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white text-sm">
             <ShoppingCart className="h-4 w-4 mr-2" />
             View Cart
           </Button>
         </div>
 
         {/* Products Grid */}
-        <div className={`grid gap-6 ${
+        <div className={`grid gap-4 md:gap-6 ${
           viewMode === 'grid' 
             ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
             : 'grid-cols-1'
@@ -347,13 +327,13 @@ const Shop = () => {
             <Card 
               key={product.id} 
               className={`group hover:shadow-glow transition-all duration-300 hover:-translate-y-2 overflow-hidden animate-scaleIn ${
-                viewMode === 'list' ? 'flex' : ''
+                viewMode === 'list' ? 'flex flex-col sm:flex-row' : ''
               }`}
               style={{ animationDelay: `${index * 50}ms` }}
             >
-              <div className={`relative overflow-hidden ${viewMode === 'list' ? 'w-48 flex-shrink-0' : ''}`}>
+              <div className={`relative overflow-hidden ${viewMode === 'list' ? 'w-full sm:w-48 flex-shrink-0' : ''}`}>
                 {product.isOnSale && (
-                  <div className="absolute top-3 left-3 z-10 bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs font-medium animate-pulse-slow">
+                  <div className="absolute top-2 md:top-3 left-2 md:left-3 z-10 bg-red-600 text-white px-2 py-1 rounded-full text-xs font-medium animate-pulse-slow">
                     -{product.discount}%
                   </div>
                 )}
@@ -362,49 +342,49 @@ const Shop = () => {
                   src={product.image}
                   alt={product.name}
                   className={`object-cover group-hover:scale-110 transition-transform duration-500 ${
-                    viewMode === 'list' ? 'w-full h-full' : 'w-full h-48'
+                    viewMode === 'list' ? 'w-full h-32 sm:h-full' : 'w-full h-32 md:h-48'
                   }`}
                 />
                 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="absolute bottom-4 left-4 right-4 flex space-x-2">
+                  <div className="absolute bottom-2 md:bottom-4 left-2 md:left-4 right-2 md:right-4 flex space-x-2">
                     <Button 
                       size="sm" 
-                      className="flex-1 bg-background/90 text-foreground hover:bg-background hover:scale-105 transition-all duration-200"
+                      className="flex-1 bg-white/90 text-gray-900 hover:bg-white hover:scale-105 transition-all duration-200 text-xs"
                       onClick={() => handleViewProduct(product)}
                     >
-                      <Eye className="h-4 w-4 mr-1" />
+                      <Eye className="h-3 w-3 md:h-4 md:w-4 mr-1" />
                       View
                     </Button>
                     <Button 
                       size="sm" 
-                      className="flex-1 hover:scale-105 transition-all duration-200"
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white hover:scale-105 transition-all duration-200 text-xs"
                       onClick={() => handleAddToCart(product)}
                     >
-                      <ShoppingCart className="h-4 w-4 mr-1" />
+                      <ShoppingCart className="h-3 w-3 md:h-4 md:w-4 mr-1" />
                       Add
                     </Button>
                   </div>
                 </div>
               </div>
 
-              <CardContent className={`p-6 ${viewMode === 'list' ? 'flex-1' : ''}`}>
+              <CardContent className={`p-3 md:p-6 ${viewMode === 'list' ? 'flex-1' : ''}`}>
                 <div className="mb-2">
-                  <span className="text-xs text-primary font-medium bg-primary/10 px-2 py-1 rounded-full">
+                  <span className="text-xs text-red-700 font-medium bg-red-100 px-2 py-1 rounded-full">
                     {product.category}
                   </span>
                 </div>
                 
-                <h3 className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors duration-200">
+                <h3 className="text-sm md:text-lg font-semibold mb-2 group-hover:text-red-600 transition-colors duration-200 line-clamp-2">
                   {product.name}
                 </h3>
                 
-                <div className="flex items-center mb-3">
+                <div className="flex items-center mb-2 md:mb-3">
                   <div className="flex items-center">
                     {[...Array(5)].map((_, i) => (
                       <Star
                         key={i}
-                        className={`h-4 w-4 ${
+                        className={`h-3 w-3 md:h-4 md:w-4 ${
                           i < Math.floor(product.rating)
                             ? 'fill-yellow-400 text-yellow-400'
                             : 'text-gray-300'
@@ -412,16 +392,16 @@ const Shop = () => {
                       />
                     ))}
                   </div>
-                  <span className="ml-2 text-sm text-muted-foreground">({product.rating})</span>
+                  <span className="ml-1 md:ml-2 text-xs md:text-sm text-gray-500">({product.rating})</span>
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xl font-bold text-primary">
+                  <div className="flex items-center space-x-1 md:space-x-2">
+                    <span className="text-lg md:text-xl font-bold text-red-600">
                       {product.price.toLocaleString()} Kz
                     </span>
                     {product.originalPrice && (
-                      <span className="text-sm text-muted-foreground line-through">
+                      <span className="text-xs md:text-sm text-gray-500 line-through">
                         {product.originalPrice.toLocaleString()} Kz
                       </span>
                     )}
@@ -433,13 +413,13 @@ const Shop = () => {
         </div>
 
         {/* Pagination */}
-        <div className="mt-12 flex justify-center animate-fadeInUp">
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" disabled>Previous</Button>
-            <Button variant="default">1</Button>
-            <Button variant="outline">2</Button>
-            <Button variant="outline">3</Button>
-            <Button variant="outline">Next</Button>
+        <div className="mt-8 md:mt-12 flex justify-center animate-fadeInUp">
+          <div className="flex items-center space-x-1 md:space-x-2">
+            <Button variant="outline" disabled size="sm" className="text-xs md:text-sm">Previous</Button>
+            <Button variant="default" size="sm" className="text-xs md:text-sm">1</Button>
+            <Button variant="outline" size="sm" className="text-xs md:text-sm">2</Button>
+            <Button variant="outline" size="sm" className="text-xs md:text-sm">3</Button>
+            <Button variant="outline" size="sm" className="text-xs md:text-sm">Next</Button>
           </div>
         </div>
       </main>

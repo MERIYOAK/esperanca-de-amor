@@ -112,27 +112,6 @@ orderSchema.index({ status: 1 });
 orderSchema.index({ createdAt: -1 });
 orderSchema.index({ paymentStatus: 1 });
 
-// Pre-save middleware to generate order number
-orderSchema.pre('save', async function(next) {
-  if (this.isNew && !this.orderNumber) {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    
-    // Get count of orders for today
-    const todayOrders = await this.constructor.countDocuments({
-      createdAt: {
-        $gte: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
-        $lt: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1)
-      }
-    });
-    
-    this.orderNumber = `EA${year}${month}${day}${String(todayOrders + 1).padStart(4, '0')}`;
-  }
-  next();
-});
-
 // Method to update order status
 orderSchema.methods.updateStatus = function(newStatus, updatedBy = null) {
   this.status = newStatus;
@@ -148,12 +127,37 @@ orderSchema.methods.updateStatus = function(newStatus, updatedBy = null) {
 };
 
 // Method to generate WhatsApp message
-orderSchema.methods.generateWhatsAppMessage = function() {
+orderSchema.methods.generateWhatsAppMessage = async function() {
+  // Populate user if not already populated
+  if (!this.populated('user')) {
+    await this.populate('user', 'name email');
+  }
+  
   const itemsList = this.items.map(item => 
-    `• ${item.name} - ${item.quantity}x ${item.price.toLocaleString()} Kz`
+    `• ${item.name} x${item.quantity} - ${(item.price / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}`
   ).join('\n');
   
-  const message = `${process.env.WHATSAPP_MESSAGE_TEMPLATE || 'Hello! I would like to place an order for the following items:'}\n\n${itemsList}\n\nOrder Number: ${this.orderNumber}\nTotal Amount: ${this.totalAmount.toLocaleString()} Kz\n\nCustomer: ${this.user.name || 'N/A'}\nPhone: ${this.shippingAddress.phone || 'N/A'}\nAddress: ${this.shippingAddress.street}, ${this.shippingAddress.city}`;
+  const totalAmount = (this.totalAmount / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+  
+  const message = `🛒 *New Order from ${this.user?.name || 'Customer'}*
+
+📋 *Order Items:*
+${itemsList}
+
+💰 *Order Summary:*
+Order Number: ${this.orderNumber}
+Total Amount: ${totalAmount}
+
+📞 *Contact Information:*
+Name: ${this.user?.name || 'N/A'}
+Email: ${this.user?.email || 'N/A'}
+Phone: ${this.shippingAddress?.phone || 'N/A'}
+
+📍 *Delivery Address:*
+${this.shippingAddress?.street || 'N/A'}, ${this.shippingAddress?.city || 'N/A'}, ${this.shippingAddress?.state || 'N/A'} ${this.shippingAddress?.zipCode || 'N/A'}
+
+---
+*Order placed via Esperança de Amor E-commerce*`;
   
   this.whatsappMessage = message;
   return this.save();

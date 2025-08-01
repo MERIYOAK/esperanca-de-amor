@@ -43,8 +43,15 @@ cartSchema.virtual('itemCount').get(function() {
 // Virtual for total price
 cartSchema.virtual('totalPrice').get(function() {
   return this.items.reduce((total, item) => {
-    const price = item.product.isOnSale ? item.product.salePrice : item.product.price;
-    return total + (price * item.quantity);
+    // Check if product is populated
+    if (item.product && typeof item.product === 'object') {
+      const price = item.product.isOnSale && item.product.discount 
+        ? item.product.price - (item.product.price * item.product.discount / 100)
+        : item.product.price;
+      return total + (price * item.quantity);
+    }
+    // If product is not populated, return 0 for this item
+    return total;
   }, 0);
 });
 

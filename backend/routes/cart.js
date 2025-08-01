@@ -60,9 +60,9 @@ router.use(protect);
 router.get('/', getCart);
 router.get('/summary', getCartSummary);
 router.post('/add', validateAddToCart, addToCart);
-router.delete('/remove/:productId', removeFromCart);
-router.put('/update/:productId', validateUpdateCartItem, updateCartItem);
 router.delete('/clear', clearCart);
+router.delete('/:itemId', removeFromCart);
+router.put('/:itemId', validateUpdateCartItem, updateCartItem);
 router.post('/checkout', validateCheckout, checkout);
 
 module.exports = router; 

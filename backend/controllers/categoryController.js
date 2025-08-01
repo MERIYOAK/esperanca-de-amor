@@ -61,7 +61,15 @@ const getCategory = async (req, res, next) => {
 // @access  Private/Admin
 const createCategory = async (req, res, next) => {
   try {
-    const { name, description, parentCategory, sortOrder } = req.body;
+    const { name, description, parentCategory, sortOrder, isActive } = req.body;
+
+    // Validate required fields
+    if (!name || name.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'Category name is required'
+      });
+    }
 
     // Generate slug from name
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -75,13 +83,22 @@ const createCategory = async (req, res, next) => {
       });
     }
 
-    const category = await Category.create({
-      name,
+    const categoryData = {
+      name: name.trim(),
       slug,
-      description,
-      parentCategory,
-      sortOrder
-    });
+      description: description || '',
+      isActive: isActive !== undefined ? isActive : true,
+      sortOrder: sortOrder || 0
+    };
+
+    // Add parentCategory if provided
+    if (parentCategory && parentCategory !== '' && parentCategory !== null) {
+      categoryData.parentCategory = parentCategory;
+    } else {
+      categoryData.parentCategory = null;
+    }
+
+    const category = await Category.create(categoryData);
 
     const populatedCategory = await Category.findById(category._id)
       .populate('parentCategory', 'name slug');
@@ -92,6 +109,7 @@ const createCategory = async (req, res, next) => {
       data: { category: populatedCategory }
     });
   } catch (error) {
+    console.error('Category creation error:', error);
     next(error);
   }
 };
@@ -130,7 +148,9 @@ const updateCategory = async (req, res, next) => {
     // Update fields
     if (name) category.name = name;
     if (description !== undefined) category.description = description;
-    if (parentCategory !== undefined) category.parentCategory = parentCategory;
+    if (parentCategory !== undefined) {
+      category.parentCategory = parentCategory === '' ? null : parentCategory;
+    }
     if (sortOrder !== undefined) category.sortOrder = sortOrder;
     if (typeof isActive === 'boolean') category.isActive = isActive;
 
@@ -144,6 +164,7 @@ const updateCategory = async (req, res, next) => {
       success: true,
       message: 'Category updated successfully',
       data: { category: updatedCategory }
+    
     });
   } catch (error) {
     next(error);

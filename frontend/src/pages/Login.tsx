@@ -26,13 +26,13 @@ const Login = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Welcome to Esperança de Amor</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-xl md:text-2xl font-bold">Welcome to Esperança de Amor</CardTitle>
+          <CardDescription className="text-sm md:text-base">
             Log in to access your account and start shopping
           </CardDescription>
         </CardHeader>
         
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 md:space-y-6">
           <GoogleAuth 
             onSuccess={handleGoogleSuccess}
             onError={handleGoogleError}
@@ -42,7 +42,7 @@ const Login = () => {
             <Button 
               variant="link" 
               onClick={() => navigate('/')}
-              className="text-muted-foreground"
+              className="text-muted-foreground text-sm md:text-base"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Home

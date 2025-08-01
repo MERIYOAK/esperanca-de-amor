@@ -1,4 +1,4 @@
-import { Timer, TrendingUp, Package } from 'lucide-react';
+import { Timer, TrendingUp, Package, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,10 +12,7 @@ interface Offer {
   title: string;
   description: string;
   discount: number;
-  category: {
-    _id: string;
-    name: string;
-  };
+  category: string;
   productIds: Array<{
     _id: string;
     name: string;
@@ -25,89 +22,126 @@ interface Offer {
   image: string;
   validUntil: string;
   isActive: boolean;
+  originalPrice?: number;
 }
 
 const WeeklyOffers = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const { user } = useAuth();
-  const { addToCart } = useCart();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [claimingOffer, setClaimingOffer] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { refreshCart } = useCart();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // Format category name for display
+  const formatCategoryName = (category: string) => {
+    if (!category) return 'Special Offer';
+    
+    // Convert kebab-case to Title Case
+    return category
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
 
   // Fetch offers from backend
   useEffect(() => {
+    console.log('WeeklyOffers: Component mounted, fetching offers...');
+    let isMounted = true;
+    let abortController = new AbortController();
+    let retryCount = 0;
+    const maxRetries = 3;
+
     const fetchOffers = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('http://localhost:5000/api/offers');
+        console.log('WeeklyOffers: Fetching offers from API...');
+        const response = await fetch('http://localhost:5000/api/offers', {
+          signal: abortController.signal,
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (!isMounted) return;
+        
+        console.log('WeeklyOffers: Response status:', response.status);
         
         if (response.ok) {
           const data = await response.json();
+          console.log('WeeklyOffers: API response data:', data);
+          console.log('WeeklyOffers: Offers array:', data.data?.offers);
           setOffers(data.data.offers || []);
+        } else if (response.status === 429) {
+          console.warn('Rate limited - too many requests');
+          if (retryCount < maxRetries) {
+            retryCount++;
+            const retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+            console.log(`Retrying in ${retryDelay}ms (attempt ${retryCount}/${maxRetries})`);
+            setTimeout(() => {
+              if (isMounted) {
+                fetchOffers();
+              }
+            }, retryDelay);
+            return;
+          }
+          // Show fallback offers when rate limited
+          setOffers([
+            {
+              _id: 'fallback-1',
+              title: 'Special Discount',
+              description: 'Limited time offer on selected products',
+              discount: 15,
+              category: 'Special Offer',
+              productIds: [],
+              image: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop',
+              validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+              isActive: true,
+              originalPrice: 6000
+            },
+            {
+              _id: 'fallback-2',
+              title: 'Flash Sale',
+              description: 'Quick deals on popular items',
+              discount: 20,
+              category: 'Flash Sale',
+              productIds: [],
+              image: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop',
+              validUntil: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+              isActive: true,
+              originalPrice: 4000
+            }
+          ]);
         } else {
-          console.error('Failed to fetch offers');
-          // Fallback to demo offers if API fails
-          setOffers(demoOffers);
+          console.error('Failed to fetch offers:', response.status);
+          setOffers([]);
         }
-      } catch (error) {
+      } catch (error: any) {
+        if (!isMounted) return;
+        
+        if (error.name === 'AbortError') {
+          console.log('Request aborted');
+          return;
+        }
+        
         console.error('Error fetching offers:', error);
-        // Fallback to demo offers
-        setOffers(demoOffers);
+        setOffers([]);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchOffers();
-  }, []);
 
-  // Demo offers as fallback
-  const demoOffers: Offer[] = [
-    {
-      _id: '1',
-      title: 'Fresh Produce Bundle',
-      description: 'Get 30% off on all fresh vegetables and fruits',
-      image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&h=300&fit=crop',
-      discount: 30,
-      validUntil: '2024-12-31',
-      isActive: true,
-      category: { _id: '1', name: 'Fresh Fruits' },
-      productIds: [
-        { _id: '1', name: 'Fresh Avocados', price: 2500, images: [{ url: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=300&h=300&fit=crop' }] },
-        { _id: '7', name: 'Fresh Pineapple', price: 1800, images: [{ url: 'https://images.unsplash.com/photo-1587735243615-c03f25aaff15?w=300&h=300&fit=crop' }] }
-      ]
-    },
-    {
-      _id: '2',
-      title: 'Beverage Special',
-      description: 'Buy 2 Get 1 Free on all imported drinks',
-      image: 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400&h=300&fit=crop',
-      discount: 33,
-      validUntil: '2024-12-31',
-      isActive: true,
-      category: { _id: '2', name: 'Beverages' },
-      productIds: [
-        { _id: '2', name: 'Premium Coffee Beans', price: 8500, images: [{ url: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=300&h=300&fit=crop' }] },
-        { _id: '6', name: 'Imported Wine', price: 12000, images: [{ url: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=300&h=300&fit=crop' }] }
-      ]
-    },
-    {
-      _id: '3',
-      title: 'Weekend Combo',
-      description: 'Special weekend prices on family meal packages',
-      image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop',
-      discount: 25,
-      validUntil: '2024-12-31',
-      isActive: true,
-      category: { _id: '3', name: 'Meal Packages' },
-      productIds: [
-        { _id: '4', name: 'Fresh Fish Selection', price: 6800, images: [{ url: 'https://images.unsplash.com/photo-1544943910-4ca6073dd0b4?w=300&h=300&fit=crop' }] },
-        { _id: '8', name: 'Imported Cheese', price: 5500, images: [{ url: 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=300&h=300&fit=crop' }] }
-      ]
-    }
-  ];
+    return () => {
+      console.log('WeeklyOffers: Component unmounting, cleaning up...');
+      isMounted = false;
+      abortController.abort();
+    };
+  }, []); // Empty dependency array - only run once on mount
 
   const handleClaimOffer = async (offer: Offer) => {
     console.log('Claim offer clicked for:', offer.title);
@@ -134,17 +168,22 @@ const WeeklyOffers = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          offerId: offer._id
+          offerId: offer._id,
+          createOrder: false
         })
       });
 
       const data = await response.json();
 
       if (data.success) {
+        // Refresh the cart to update the cart count and items
+        await refreshCart();
+        
+        const productsCount = data.data.addedProducts?.length || offer.productIds.length;
         // Show success message
         toast({
           title: 'Offer Claimed Successfully! 🎉',
-          description: `"${offer.title}" has been added to your cart with ${offer.discount}% discount!`,
+          description: `${productsCount} product${productsCount > 1 ? 's' : ''} from "${offer.title}" added to your cart with ${offer.discount}% discount!`,
           variant: 'default',
         });
         
@@ -168,40 +207,8 @@ const WeeklyOffers = () => {
     }
   };
 
-  const handleSubscribe = () => {
-    console.log('Subscribe clicked');
-    
-    // Check if user is authenticated
-    if (!user) {
-      toast({
-        title: 'Authentication Required',
-        description: 'Please log in to subscribe to offers',
-        variant: 'destructive',
-      });
-      navigate('/login');
-      return;
-    }
-
-    try {
-      toast({
-        title: 'Subscribed Successfully! 📧',
-        description: 'You\'ll receive weekly offers and exclusive deals via email. Check your inbox for confirmation!',
-        variant: 'default',
-      });
-      
-      // Optionally navigate to profile page to manage subscriptions
-      setTimeout(() => {
-        navigate('/profile');
-      }, 2000);
-      
-    } catch (error: any) {
-      console.error('Error subscribing:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to subscribe. Please try again.',
-        variant: 'destructive',
-      });
-    }
+  const handleViewOffer = (offer: Offer) => {
+    navigate(`/offer/${offer._id}`);
   };
 
   const formatDate = (dateString: string) => {
@@ -211,6 +218,11 @@ const WeeklyOffers = () => {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  const formatPrice = (price: number | undefined) => {
+    if (price === undefined || price === null) return '0';
+    return price.toLocaleString();
   };
 
   if (isLoading) {
@@ -238,109 +250,117 @@ const WeeklyOffers = () => {
   }
 
   return (
-    <section className="py-20">
+    <section className="py-12 md:py-20 bg-gradient-to-r from-red-50 to-red-100">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16 animate-fadeInUp">
-          <h2 className="text-4xl font-bold mb-4">This Week's Special Offers</h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Don't miss out on these amazing deals! Limited time offers on your favorite products.
+        <div className="text-center mb-8 md:mb-16 animate-fadeInUp">
+          <h2 className="text-2xl md:text-4xl font-bold mb-2 md:mb-4 text-gray-900">Weekly Offers</h2>
+          <p className="text-base md:text-xl text-gray-600 max-w-2xl mx-auto">
+            Don't miss out on our weekly deals and special promotions. Limited time offers that you won't want to miss!
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {offers.map((offer, index) => {
-            const IconComponent = Package; // Default icon
-            return (
-              <Card 
-                key={offer._id} 
-                className={`group hover:shadow-glow transition-all duration-500 hover:-translate-y-3 overflow-hidden bg-gradient-to-br from-card to-secondary/20 animate-slideInLeft`}
-                style={{ animationDelay: `${index * 200}ms` }}
-              >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
+          {isLoading ? (
+            <div className="col-span-full text-center py-8 md:py-16">
+              <p>Loading offers...</p>
+            </div>
+          ) : offers.length === 0 ? (
+            <div className="col-span-full text-center py-8 md:py-16">
+              <p>No offers available at the moment. Check back soon!</p>
+            </div>
+          ) : (
+            offers.map((offer, index) => (
+              <Card key={offer._id} className={`group hover:shadow-glow transition-all duration-300 hover:-translate-y-2 overflow-hidden animate-scaleIn bg-white border-red-200`} style={{ animationDelay: `${index * 100}ms` }}>
                 <div className="relative overflow-hidden">
+                  {offer.discount > 0 && (
+                    <div className="absolute top-2 md:top-3 left-2 md:left-3 z-10 bg-red-600 text-white px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-bold animate-pulse-slow">
+                      -{offer.discount}%
+                    </div>
+                  )}
+                  
                   <img
-                    src={offer.image}
-                    alt={offer.title}
-                    className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
+                    src={offer.image || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop'}
+                    alt={offer.title || 'Offer'}
+                    className="w-full h-32 md:h-48 object-cover group-hover:scale-110 transition-transform duration-500"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                   
-                  {/* Discount Badge */}
-                  <div className="absolute top-4 right-4 bg-primary text-primary-foreground px-3 py-2 rounded-full font-bold text-lg animate-pulse-slow">
-                    -{offer.discount}%
-                  </div>
-                  
-                  {/* Category Icon */}
-                  <div className="absolute top-4 left-4 bg-background/90 p-2 rounded-full">
-                    <IconComponent className="h-5 w-5 text-primary" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute bottom-2 md:bottom-4 left-2 md:left-4 right-2 md:right-4">
+                      <div className="flex space-x-2">
+                        <Button 
+                          size="sm" 
+                          className="flex-1 bg-white hover:bg-gray-100 text-gray-900 hover:scale-105 transition-all duration-200 text-xs border border-gray-300"
+                          onClick={() => handleViewOffer(offer)}
+                        >
+                          <Eye className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                          View
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          className="flex-1 bg-red-600 hover:bg-red-700 text-white hover:scale-105 transition-all duration-200 text-xs"
+                          onClick={() => handleClaimOffer(offer)}
+                          disabled={claimingOffer === offer._id}
+                        >
+                          {claimingOffer === offer._id ? (
+                            <>
+                              <div className="animate-spin h-3 w-3 md:h-4 md:w-4 mr-1 border-2 border-white border-t-transparent rounded-full"></div>
+                              Claiming...
+                            </>
+                          ) : (
+                            <>
+                              <Package className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                              Claim
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <CardContent className="p-6">
-                  <div className="mb-3">
-                    <span className="text-xs text-accent font-medium bg-accent/10 px-2 py-1 rounded-full">
-                      {offer.category?.name || 'Special Offer'}
+                <CardContent className="p-3 md:p-6">
+                  <div className="mb-2">
+                    <span className="text-xs text-red-700 font-medium bg-red-100 px-2 py-1 rounded-full">
+                      {offer.category || 'Special Offer'}
                     </span>
                   </div>
                   
-                  <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors duration-200">
-                    {offer.title}
+                  <h3 className="text-sm md:text-lg font-semibold mb-2 group-hover:text-red-600 transition-colors duration-200 line-clamp-2">
+                    {offer.title || 'Special Offer'}
                   </h3>
                   
-                  <p className="text-muted-foreground mb-4">
-                    {offer.description}
+                  <p className="text-xs md:text-sm text-gray-600 mb-3 md:mb-4 line-clamp-2">
+                    {offer.description || 'Limited time offer. Don\'t miss out!'}
                   </p>
                   
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-2">
-                      <Timer className="h-4 w-4 text-warning" />
-                      <span className="text-sm text-muted-foreground">Valid until {formatDate(offer.validUntil)}</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-1 md:space-x-2">
+                      <span className="text-lg md:text-2xl font-bold text-red-600">
+                        {offer.discount}% OFF
+                      </span>
+                      {offer.originalPrice && (
+                        <span className="text-xs md:text-sm text-gray-500 line-through">
+                          {formatPrice(offer.originalPrice)} Kz
+                        </span>
+                      )}
                     </div>
                   </div>
-                  
-                  <Button 
-                    className="w-full hover:scale-105 transition-all duration-200 group"
-                    onClick={() => handleClaimOffer(offer)}
-                    disabled={claimingOffer === offer._id}
-                  >
-                    {claimingOffer === offer._id ? (
-                      <div className="flex items-center">
-                        <div className="h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2"></div>
-                        Claiming...
-                      </div>
-                    ) : (
-                      <>
-                        Claim Offer
-                        <TrendingUp className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform duration-200" />
-                      </>
-                    )}
-                  </Button>
                 </CardContent>
               </Card>
-            );
-          })}
+            ))
+          )}
         </div>
 
-        <div className="mt-16 text-center animate-fadeInUp">
-          <Card className="max-w-4xl mx-auto bg-gradient-primary text-primary-foreground">
-            <CardContent className="p-8">
-              <div className="flex flex-col md:flex-row items-center justify-between">
-                <div className="text-center md:text-left mb-6 md:mb-0">
-                  <h3 className="text-2xl font-bold mb-2">Subscribe to Weekly Offers</h3>
-                  <p className="text-primary-foreground/90">
-                    Get notified about new deals and exclusive offers every week!
-                  </p>
-                </div>
-                <Button 
-                  variant="secondary" 
-                  size="lg" 
-                  className="hover:scale-105 transition-all duration-200 min-w-[200px]"
-                  onClick={handleSubscribe}
-                >
-                  Subscribe Now
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="text-center mt-8 md:mt-12 animate-fadeInUp">
+          <Button 
+            size="lg" 
+            variant="outline" 
+            className="border-red-600 text-red-600 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-700 hover:text-white hover:scale-105 hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] transition-all duration-300 group relative overflow-hidden"
+            onClick={() => navigate('/offers')}
+          >
+            <span className="relative z-10">View All Offers</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-red-600/20 to-red-700/20 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </Button>
         </div>
       </div>
     </section>
