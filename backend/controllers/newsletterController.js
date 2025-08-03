@@ -560,19 +560,27 @@ const sendWelcomeEmail = async (email, name) => {
             color: #dc2626;
             text-decoration: none;
             font-weight: 600;
-            padding: 8px 16px;
+            padding: 12px 24px;
             background: #fef2f2;
-            border: 1px solid #fecaca;
-            border-radius: 6px;
+            border: 2px solid #fecaca;
+            border-radius: 8px;
             display: inline-block;
             margin: 10px 0;
             transition: all 0.3s ease;
+            font-size: 14px;
+            min-width: 120px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(220, 38, 38, 0.1);
           }
           .unsubscribe-link:hover {
             background: #dc2626;
             color: white;
             text-decoration: none;
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+          }
+          .unsubscribe-link:active {
+            transform: translateY(0);
             box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
           }
           
@@ -617,11 +625,15 @@ const sendWelcomeEmail = async (email, name) => {
               font-size: 11px;
             }
             .unsubscribe-link {
-              padding: 10px 20px;
-              font-size: 14px;
+              padding: 14px 20px;
+              font-size: 15px;
               margin: 15px 0;
               width: 100%;
-              text-align: center;
+              max-width: 280px;
+              min-width: 200px;
+              display: block;
+              margin-left: auto;
+              margin-right: auto;
             }
           }
           
@@ -641,23 +653,67 @@ const sendWelcomeEmail = async (email, name) => {
             .content h2 {
               font-size: 16px;
             }
-            .btn {
-              padding: 10px 16px;
-              font-size: 13px;
-              min-width: 160px;
-            }
-            .warning {
+            .feature-list {
               padding: 12px;
               margin: 12px 0;
+            }
+            .feature-list h3 {
+              font-size: 14px;
+            }
+            .feature-list li {
+              font-size: 12px;
+              margin-bottom: 5px;
+            }
+            .welcome-message {
+              padding: 12px;
+              margin: 12px 0;
+            }
+            .welcome-message p {
+              font-size: 12px;
             }
             .footer {
               padding: 12px 10px;
               font-size: 10px;
             }
             .unsubscribe-link {
-              padding: 12px 16px;
-              font-size: 13px;
-              margin: 12px 0;
+              padding: 16px 20px;
+              font-size: 16px;
+              margin: 12px auto;
+              width: 100%;
+              max-width: 250px;
+              min-width: 180px;
+              border-radius: 10px;
+              font-weight: 700;
+            }
+          }
+          
+          @media only screen and (max-width: 360px) {
+            .container {
+              margin: 2px;
+            }
+            .header {
+              padding: 12px 8px;
+            }
+            .header h1 {
+              font-size: 16px;
+            }
+            .content {
+              padding: 12px 8px;
+            }
+            .content h2 {
+              font-size: 15px;
+            }
+            .footer {
+              padding: 10px 8px;
+              font-size: 9px;
+            }
+            .unsubscribe-link {
+              padding: 18px 16px;
+              font-size: 15px;
+              margin: 10px auto;
+              width: 100%;
+              max-width: 220px;
+              min-width: 160px;
             }
           }
           
@@ -695,6 +751,15 @@ const sendWelcomeEmail = async (email, name) => {
             }
             .welcome-message p {
               color: #e0f2fe;
+            }
+            .unsubscribe-link {
+              background: #dc2626;
+              color: white;
+              border-color: #dc2626;
+            }
+            .unsubscribe-link:hover {
+              background: #b91c1c;
+              border-color: #b91c1c;
             }
           }
         </style>
@@ -868,19 +933,27 @@ const sendWelcomeBackEmail = async (email, name) => {
             color: #dc2626;
             text-decoration: none;
             font-weight: 600;
-            padding: 8px 16px;
+            padding: 12px 24px;
             background: #fef2f2;
-            border: 1px solid #fecaca;
-            border-radius: 6px;
+            border: 2px solid #fecaca;
+            border-radius: 8px;
             display: inline-block;
             margin: 10px 0;
             transition: all 0.3s ease;
+            font-size: 14px;
+            min-width: 120px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(220, 38, 38, 0.1);
           }
           .unsubscribe-link:hover {
             background: #dc2626;
             color: white;
             text-decoration: none;
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+          }
+          .unsubscribe-link:active {
+            transform: translateY(0);
             box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
           }
           
@@ -925,11 +998,15 @@ const sendWelcomeBackEmail = async (email, name) => {
               font-size: 11px;
             }
             .unsubscribe-link {
-              padding: 10px 20px;
-              font-size: 14px;
+              padding: 14px 20px;
+              font-size: 15px;
               margin: 15px 0;
               width: 100%;
-              text-align: center;
+              max-width: 280px;
+              min-width: 200px;
+              display: block;
+              margin-left: auto;
+              margin-right: auto;
             }
           }
           
@@ -972,9 +1049,44 @@ const sendWelcomeBackEmail = async (email, name) => {
               font-size: 10px;
             }
             .unsubscribe-link {
-              padding: 12px 16px;
-              font-size: 13px;
-              margin: 12px 0;
+              padding: 16px 20px;
+              font-size: 16px;
+              margin: 12px auto;
+              width: 100%;
+              max-width: 250px;
+              min-width: 180px;
+              border-radius: 10px;
+              font-weight: 700;
+            }
+          }
+          
+          @media only screen and (max-width: 360px) {
+            .container {
+              margin: 2px;
+            }
+            .header {
+              padding: 12px 8px;
+            }
+            .header h1 {
+              font-size: 16px;
+            }
+            .content {
+              padding: 12px 8px;
+            }
+            .content h2 {
+              font-size: 15px;
+            }
+            .footer {
+              padding: 10px 8px;
+              font-size: 9px;
+            }
+            .unsubscribe-link {
+              padding: 18px 16px;
+              font-size: 15px;
+              margin: 10px auto;
+              width: 100%;
+              max-width: 220px;
+              min-width: 160px;
             }
           }
           
@@ -1012,6 +1124,15 @@ const sendWelcomeBackEmail = async (email, name) => {
             .feature-list h3,
             .feature-list li {
               color: #fef3c7;
+            }
+            .unsubscribe-link {
+              background: #dc2626;
+              color: white;
+              border-color: #dc2626;
+            }
+            .unsubscribe-link:hover {
+              background: #b91c1c;
+              border-color: #b91c1c;
             }
           }
         </style>

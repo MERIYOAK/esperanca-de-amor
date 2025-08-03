@@ -14,6 +14,7 @@ const getOffers = asyncHandler(async (req, res) => {
     validUntil: { $gte: now }
   })
     .populate('productIds', 'name price images')
+    .populate('claimedBy.user', 'name email')
     .sort({ createdAt: -1 });
 
   console.log(`Found ${offers.length} valid offers at ${now.toISOString()}`);
@@ -29,7 +30,8 @@ const getOffers = asyncHandler(async (req, res) => {
 // Get a specific offer
 const getOffer = asyncHandler(async (req, res) => {
   const offer = await Offer.findById(req.params.id)
-    .populate('productIds', 'name price images');
+    .populate('productIds', 'name price images')
+    .populate('claimedBy.user', 'name email');
 
   if (!offer) {
     return res.status(404).json({

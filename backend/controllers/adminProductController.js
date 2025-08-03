@@ -2,6 +2,190 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const { deleteImageFromS3, deleteMultipleImagesFromS3 } = require('../utils/s3Upload');
 const asyncHandler = require('../utils/asyncHandler');
+const XLSX = require('xlsx');
+const fs = require('fs');
+const path = require('path');
+
+// Export products to Excel
+const exportProducts = asyncHandler(async (req, res) => {
+  try {
+    // Get all products
+    const products = await Product.find({}).sort({ createdAt: -1 });
+
+    // Create Excel data
+    const excelData = products.map(product => ({
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      originalPrice: product.originalPrice || '',
+      category: product.category,
+      stock: product.stock,
+      tags: product.tags.join(', '),
+      isActive: product.isActive ? 'Yes' : 'No',
+      createdAt: new Date(product.createdAt).toISOString(),
+      images: product.images.map(img => img.url).join('; ')
+    }));
+
+    // Create workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+    // Set column widths
+    const columnWidths = [
+      { wch: 20 }, // name
+      { wch: 40 }, // description
+      { wch: 10 }, // price
+      { wch: 12 }, // originalPrice
+      { wch: 15 }, // category
+      { wch: 8 },  // stock
+      { wch: 25 }, // tags
+      { wch: 8 },  // isActive
+      { wch: 20 }, // createdAt
+      { wch: 50 }  // images
+    ];
+    worksheet['!cols'] = columnWidths;
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Products');
+
+    // Generate Excel file buffer
+    const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    // Set headers for Excel download
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=products-export-${new Date().toISOString().split('T')[0]}.xlsx`);
+
+    // Send the Excel file
+    res.send(excelBuffer);
+  } catch (error) {
+    console.error('Error exporting products:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to export products'
+    });
+  }
+});
+
+// Import products from Excel
+const importProducts = asyncHandler(async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded'
+      });
+    }
+
+    let importedCount = 0;
+    let errorCount = 0;
+
+    try {
+      let workbook;
+      
+      // Check if file is from S3 or local storage
+      if (req.file.location && req.file.location.includes('s3.amazonaws.com')) {
+        // S3 file - download and read
+        console.log('📋 Reading Excel file from S3:', req.file.location);
+        
+        // Download file from S3
+        const AWS = require('aws-sdk');
+        const s3 = new AWS.S3();
+        
+        const params = {
+          Bucket: process.env.AWS_S3_BUCKET,
+          Key: req.file.key
+        };
+        
+        const s3Object = await s3.getObject(params).promise();
+        const fileBuffer = s3Object.Body;
+        
+        // Read Excel from buffer
+        workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+        
+        // Clean up S3 file
+        await s3.deleteObject(params).promise();
+        console.log('✅ S3 file cleaned up');
+        
+      } else {
+        // Local file - read directly
+        console.log('📋 Reading Excel file from local storage:', req.file.path);
+        workbook = XLSX.readFile(req.file.path);
+        
+        // Clean up local file
+        fs.unlinkSync(req.file.path);
+        console.log('✅ Local file cleaned up');
+      }
+
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      
+      // Convert worksheet to JSON
+      const results = XLSX.utils.sheet_to_json(worksheet);
+
+      for (const row of results) {
+        try {
+          // Validate required fields
+          if (!row.name || !row.description || !row.price || !row.category) {
+            errorCount++;
+            continue;
+          }
+
+          // Check if product already exists (by name)
+          const existingProduct = await Product.findOne({ name: row.name });
+          if (existingProduct) {
+            errorCount++;
+            continue;
+          }
+
+          // Parse tags
+          const tags = row.tags ? row.tags.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
+
+          // Create product data
+          const productData = {
+            name: row.name,
+            description: row.description,
+            price: parseFloat(row.price) || 0,
+            originalPrice: row.originalPrice ? parseFloat(row.originalPrice) : undefined,
+            category: row.category,
+            stock: parseInt(row.stock) || 0,
+            tags: tags,
+            isActive: row.isActive === 'Yes' || row.isActive === 'true',
+            createdBy: req.admin.id
+          };
+
+          // Generate slug
+          productData.slug = row.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+          // Create product
+          await Product.create(productData);
+          importedCount++;
+        } catch (error) {
+          console.error('Error importing product:', error);
+          errorCount++;
+        }
+      }
+
+      res.status(200).json({
+        success: true,
+        message: `Import completed. ${importedCount} products imported, ${errorCount} errors.`,
+        importedCount,
+        errorCount
+      });
+    } catch (error) {
+      console.error('Error reading Excel file:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to read Excel file. Please ensure it\'s a valid Excel file.'
+      });
+    }
+  } catch (error) {
+    console.error('Error importing products:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to import products'
+    });
+  }
+});
 
 // Get all products with pagination and filters
 const getProducts = asyncHandler(async (req, res) => {
@@ -268,7 +452,33 @@ const updateProduct = asyncHandler(async (req, res) => {
   }
 
   // Handle image updates
-  let updatedImages = product.images || [];
+  let updatedImages = [];
+
+  console.log('🖼️ Image update - Original product images:', product.images);
+  console.log('🖼️ Image update - Request body existingImages:', req.body.existingImages);
+
+  // Process existing images that should be kept
+  if (req.body.existingImages) {
+    try {
+      // Handle both string and array formats
+      let existingImagesData;
+      if (typeof req.body.existingImages === 'string') {
+        existingImagesData = JSON.parse(req.body.existingImages);
+      } else if (Array.isArray(req.body.existingImages)) {
+        existingImagesData = req.body.existingImages;
+      } else {
+        existingImagesData = [req.body.existingImages];
+      }
+
+      // Add existing images that should be kept
+      updatedImages.push(...existingImagesData);
+      console.log('🖼️ Image update - Parsed existing images to keep:', existingImagesData);
+    } catch (error) {
+      console.error('Error parsing existing images:', error);
+    }
+  }
+  // If no existingImages are sent, it means all existing images should be removed
+  // So updatedImages will remain empty, effectively removing all existing images
 
   // Add new uploaded images
   if (req.files && req.files.length > 0) {
@@ -277,7 +487,10 @@ const updateProduct = asyncHandler(async (req, res) => {
       alt: file.originalname
     }));
     updatedImages.push(...newImages);
+    console.log('🖼️ Image update - Added new images:', newImages);
   }
+
+  console.log('🖼️ Image update - Final updated images array:', updatedImages);
 
   // Parse tags if it's a string
   let parsedTags = product.tags || [];
@@ -419,5 +632,7 @@ module.exports = {
   updateProduct,
   deleteProduct,
   bulkDeleteProducts,
-  updateProductStock
+  updateProductStock,
+  exportProducts,
+  importProducts
 }; 

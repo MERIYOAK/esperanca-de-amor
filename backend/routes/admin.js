@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protectAdmin, authorizeAdmin } = require('../middleware/adminAuth');
-const { uploadSingle, uploadMultiple } = require('../utils/s3Upload');
+const { uploadSingle, uploadMultiple, uploadSingleFile } = require('../utils/s3Upload');
 
 // Import controllers
 const {
@@ -11,7 +11,9 @@ const {
   updateProduct,
   deleteProduct,
   bulkDeleteProducts,
-  updateProductStock
+  updateProductStock,
+  exportProducts,
+  importProducts
 } = require('../controllers/adminProductController');
 
 const {
@@ -79,11 +81,13 @@ router.use(protectAdmin);
 
 // Product Management Routes
 router.get('/products', getProducts);
+router.delete('/products/bulk', bulkDeleteProducts);
+router.get('/products/export', exportProducts);
+router.post('/products/import', uploadSingleFile('imports'), importProducts);
 router.get('/products/:id', getProduct);
 router.post('/products', uploadMultiple('products', 5), createProduct);
 router.put('/products/:id', uploadMultiple('products', 5), updateProduct);
 router.delete('/products/:id', deleteProduct);
-router.delete('/products/bulk', bulkDeleteProducts);
 router.patch('/products/:id/stock', updateProductStock);
 
 // Announcement Management Routes

@@ -54,15 +54,35 @@ const upload = s3Configured ? multer({
     }
   }),
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 10 * 1024 * 1024, // 10MB limit (increased for Excel files)
     files: 10 // Maximum 10 files
   },
   fileFilter: (req, file, cb) => {
-    // Check file type
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
+    // Check if this is for Excel import (field name is 'file')
+    if (file.fieldname === 'file') {
+      // Allow Excel files and CSV files for imports
+      const allowedMimeTypes = [
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+        'application/vnd.ms-excel', // .xls
+        'text/csv', // .csv
+        'application/csv'
+      ];
+      
+      if (allowedMimeTypes.includes(file.mimetype) || 
+          file.originalname.endsWith('.xlsx') || 
+          file.originalname.endsWith('.xls') || 
+          file.originalname.endsWith('.csv')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only Excel (.xlsx, .xls) and CSV files are allowed'), false);
+      }
     } else {
-      cb(new Error('Only image files are allowed'), false);
+      // For other uploads (images), check if it's an image
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image files are allowed'), false);
+      }
     }
   }
 }) : null;
@@ -170,6 +190,7 @@ const uploadMultiple = (uploadPath = 'general', maxCount = 5) => {
     console.log('🔍 DEBUG: uploadMultiple middleware called');
     console.log('📋 Upload path:', uploadPath);
     console.log('📋 Max count:', maxCount);
+    console.log('📋 Content-Type:', req.headers['content-type']);
     
     if (s3Configured && upload) {
       console.log('📋 Using S3 storage');
@@ -187,6 +208,11 @@ const uploadMultiple = (uploadPath = 'general', maxCount = 5) => {
             success: false,
             message: err.message
           });
+        }
+        
+        // If no files were uploaded, that's okay - just continue
+        if (!req.files || req.files.length === 0) {
+          console.log('📋 No files uploaded - continuing without files');
         }
         
         console.log('✅ Upload middleware completed successfully (S3)');
@@ -245,11 +271,120 @@ const uploadMultiple = (uploadPath = 'general', maxCount = 5) => {
           });
         }
         
-        // Convert local file paths to URLs for consistency
-        if (req.files) {
+        // If no files were uploaded, that's okay - just continue
+        if (!req.files || req.files.length === 0) {
+          console.log('📋 No files uploaded - continuing without files');
+        } else {
+          // Convert local file paths to URLs for consistency
           req.files.forEach(file => {
             file.location = `http://localhost:5000/ecommerce-esperanca/${uploadPath}/${file.filename}`;
           });
+        }
+        
+        console.log('✅ Upload middleware completed successfully (Local)');
+        next();
+      });
+    }
+  };
+};
+
+// Upload single file (for Excel imports)
+const uploadSingleFile = (uploadPath = 'imports') => {
+  return (req, res, next) => {
+    console.log('🔍 DEBUG: uploadSingleFile middleware called');
+    console.log('📋 Upload path:', uploadPath);
+    console.log('📋 Content-Type:', req.headers['content-type']);
+    
+    if (s3Configured && upload) {
+      console.log('📋 Using S3 storage');
+      req.uploadPath = uploadPath;
+      const uploadMiddleware = upload.single('file');
+      
+      uploadMiddleware(req, res, (err) => {
+        console.log('🔍 DEBUG: uploadSingleFile callback (S3)');
+        console.log('📋 Error:', err);
+        console.log('📋 File:', req.file);
+        console.log('📋 Request body keys:', Object.keys(req.body || {}));
+        
+        if (err) {
+          console.log('❌ Upload error:', err.message);
+          return res.status(400).json({
+            success: false,
+            message: err.message
+          });
+        }
+        
+        console.log('✅ Upload middleware completed successfully (S3)');
+        next();
+      });
+    } else {
+      console.log('📋 Using local storage (S3 not configured)');
+      
+      // Create uploads directory if it doesn't exist
+      const fs = require('fs');
+      const uploadsDir = 'ecommerce-esperanca';
+      const specificDir = path.join(uploadsDir, uploadPath);
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      if (!fs.existsSync(specificDir)) {
+        fs.mkdirSync(specificDir, { recursive: true });
+      }
+      
+      const localStorage = multer.diskStorage({
+        destination: function (req, file, cb) {
+          cb(null, specificDir);
+        },
+        filename: function (req, file, cb) {
+          const fileName = `${Date.now()}_${file.originalname.replace(/\s+/g, '_')}`;
+          cb(null, fileName);
+        }
+      });
+      
+      const uploadLocal = multer({
+        storage: localStorage,
+        limits: {
+          fileSize: 10 * 1024 * 1024, // 10MB limit for Excel files
+        },
+        fileFilter: (req, file, cb) => {
+          // Allow Excel files and CSV files
+          const allowedMimeTypes = [
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+            'application/vnd.ms-excel', // .xls
+            'text/csv', // .csv
+            'application/csv'
+          ];
+          
+          if (allowedMimeTypes.includes(file.mimetype) || 
+              file.originalname.endsWith('.xlsx') || 
+              file.originalname.endsWith('.xls') || 
+              file.originalname.endsWith('.csv')) {
+            cb(null, true);
+          } else {
+            cb(new Error('Only Excel (.xlsx, .xls) and CSV files are allowed'), false);
+          }
+        }
+      });
+      
+      const uploadMiddleware = uploadLocal.single('file');
+      
+      uploadMiddleware(req, res, (err) => {
+        console.log('🔍 DEBUG: uploadSingleFile callback (Local)');
+        console.log('📋 Error:', err);
+        console.log('📋 File:', req.file);
+        console.log('📋 Request body keys:', Object.keys(req.body || {}));
+        
+        if (err) {
+          console.log('❌ Upload error:', err.message);
+          return res.status(400).json({
+            success: false,
+            message: err.message
+          });
+        }
+        
+        // Convert local file path to URL for consistency
+        if (req.file) {
+          req.file.location = `http://localhost:5000/ecommerce-esperanca/${uploadPath}/${req.file.filename}`;
         }
         
         console.log('✅ Upload middleware completed successfully (Local)');
@@ -339,6 +474,7 @@ const generatePresignedUrl = async (fileName, contentType, uploadPath = 'general
 module.exports = {
   uploadSingle,
   uploadMultiple,
+  uploadSingleFile,
   deleteImageFromS3,
   deleteMultipleImagesFromS3,
   generatePresignedUrl,
