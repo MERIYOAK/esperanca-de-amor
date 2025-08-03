@@ -13,7 +13,9 @@ import {
   Gift,
   Zap,
   Eye,
-  Package
+  Package,
+  Users,
+  MapPin
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -26,7 +28,7 @@ interface Offer {
   _id: string;
   title: string;
   description: string;
-  discountPercentage: number;
+  discount: number;
   discountAmount?: number;
   validFrom: string;
   validUntil: string;
@@ -53,8 +55,8 @@ const Offers = () => {
   const [claimingOffer, setClaimingOffer] = useState<string | null>(null);
   const { user } = useAuth();
   const { refreshCart } = useCart();
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchOffers = async () => {
@@ -81,27 +83,31 @@ const Offers = () => {
 
   const getCategoryIcon = (category: string) => {
     switch (category?.toLowerCase()) {
-      case 'flash':
-        return <Zap className="h-4 w-4" />;
-      case 'gift':
-        return <Gift className="h-4 w-4" />;
-      case 'trending':
-        return <TrendingUp className="h-4 w-4" />;
+      case 'foodstuffs':
+        return <Tag className="h-4 w-4 text-green-600" />;
+      case 'beverages':
+        return <Zap className="h-4 w-4 text-blue-600" />;
+      case 'electronics':
+        return <TrendingUp className="h-4 w-4 text-purple-600" />;
+      case 'household':
+        return <ShoppingCart className="h-4 w-4 text-orange-600" />;
       default:
-        return <Tag className="h-4 w-4" />;
+        return <Gift className="h-4 w-4 text-red-600" />;
     }
   };
 
   const getCategoryColor = (category: string) => {
     switch (category?.toLowerCase()) {
-      case 'flash':
-        return 'bg-red-100 text-red-800';
-      case 'gift':
-        return 'bg-purple-100 text-purple-800';
-      case 'trending':
+      case 'foodstuffs':
+        return 'bg-green-100 text-green-800';
+      case 'beverages':
         return 'bg-blue-100 text-blue-800';
+      case 'electronics':
+        return 'bg-purple-100 text-purple-800';
+      case 'household':
+        return 'bg-orange-100 text-orange-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-red-100 text-red-800';
     }
   };
 
@@ -118,17 +124,56 @@ const Offers = () => {
   };
 
   const isExpiringSoon = (validUntil: string) => {
+    const endDate = new Date(validUntil);
     const now = new Date();
-    const expiry = new Date(validUntil);
-    const diffTime = expiry.getTime() - now.getTime();
+    const diffTime = endDate.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays <= 3 && diffDays > 0;
   };
 
+  // Convert target audience to user-friendly label
+  const getTargetAudienceLabel = (targetAudience: string) => {
+    switch (targetAudience) {
+      case 'all':
+        return 'For Everyone';
+      case 'registered':
+        return 'Members Only';
+      case 'guests':
+        return 'New Customers';
+      default:
+        return 'For Everyone';
+    }
+  };
+
+  // Convert display location to user-friendly label
+  const getDisplayLocationLabel = (displayLocation: string) => {
+    switch (displayLocation) {
+      case 'top':
+        return 'Featured';
+      case 'bottom':
+        return 'Updates';
+      case 'sidebar':
+        return 'News';
+      case 'modal':
+        return 'Important';
+      default:
+        return 'News';
+    }
+  };
+
+  // Get appropriate icon for target audience
+  const getTargetAudienceIcon = (targetAudience: string) => {
+    switch (targetAudience) {
+      case 'registered':
+        return <Users className="h-3 w-3" />;
+      case 'guests':
+        return <Users className="h-3 w-3" />;
+      default:
+        return <Users className="h-3 w-3" />;
+    }
+  };
+
   const handleClaimOffer = async (offer: Offer) => {
-    console.log('Claim offer clicked for:', offer.title);
-    
-    // Check if user is authenticated
     if (!user) {
       toast({
         title: 'Authentication Required',
@@ -142,7 +187,6 @@ const Offers = () => {
     try {
       setClaimingOffer(offer._id);
 
-      // Call the backend API to claim the offer
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/offers/claim`, {
         method: 'POST',
         headers: {
@@ -157,19 +201,34 @@ const Offers = () => {
 
       const data = await response.json();
 
-      if (data.success) {
-        // Refresh the cart to update the cart count and items
+      if (response.ok && data.success) {
+        // Wait a moment for the backend to process the cart update
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Immediately refresh the cart to update the cart count and items
         await refreshCart();
         
         const productsCount = data.data.addedProducts?.length || offer.productIds.length;
         // Show success message
         toast({
           title: 'Offer Claimed Successfully! 🎉',
-          description: `${productsCount} product${productsCount > 1 ? 's' : ''} from "${offer.title}" added to your cart with ${offer.discountPercentage}% discount!`,
+          description: `${productsCount} product${productsCount > 1 ? 's' : ''} from "${offer.title}" added to your cart with ${offer.discount}% discount!`,
           variant: 'default',
         });
         
         // Navigate to cart to show the discounted item
+        setTimeout(() => {
+          navigate('/cart');
+        }, 1500);
+      } else if (response.status === 400 && data.message?.includes('already claimed')) {
+        // Handle case where user has already claimed this offer
+        toast({
+          title: 'Already Claimed',
+          description: 'You have already claimed this offer. Check your cart for the discounted items!',
+          variant: 'default',
+        });
+        
+        // Navigate to cart to show the already claimed items
         setTimeout(() => {
           navigate('/cart');
         }, 1500);
@@ -235,28 +294,16 @@ const Offers = () => {
       <Header />
       
       <main className="container mx-auto px-4 py-8">
-        {/* Header Section */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <Tag className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
-              Special Offers & Deals
-            </h1>
-          </div>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Discover amazing deals and exclusive offers on our products. 
-            Don't miss out on these limited-time opportunities!
-          </p>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Special Offers & Promotions</h1>
+          <p className="text-gray-600">Discover amazing deals and exclusive offers on our products.</p>
         </div>
 
-        {/* Offers Grid */}
         {offers.length === 0 ? (
           <div className="text-center py-12">
-            <Tag className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">No Active Offers</h2>
-            <p className="text-gray-600">
-              Check back soon for new deals and special offers!
-            </p>
+            <Gift className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">No Offers Available</h2>
+            <p className="text-gray-600">Check back soon for new offers and promotions!</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -264,21 +311,20 @@ const Offers = () => {
               <Card key={offer._id} className="group hover:shadow-glow transition-all duration-300 hover:-translate-y-2 overflow-hidden animate-scaleIn">
                 {/* Offer Image */}
                 {offer.image && (
-                  <div className="relative h-48 bg-gray-100 overflow-hidden">
+                  <div className="relative h-48 overflow-hidden">
                     <img
                       src={offer.image}
                       alt={offer.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    {/* Discount Badge Overlay */}
-                    <div className="absolute top-4 right-4">
-                      <div className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-                        {offer.discountPercentage}% OFF
-                      </div>
+                    <div className="absolute top-4 right-4 z-20">
+                      <Badge className="bg-red-600 text-white">
+                        {offer.discount}% OFF
+                      </Badge>
                     </div>
                     
                     {/* Hover Buttons Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
                       <div className="absolute bottom-4 left-4 right-4">
                         <div className="flex space-x-2">
                           <Button 
@@ -313,166 +359,178 @@ const Offers = () => {
                   </div>
                 )}
 
-                {/* Offer Header */}
-                <div className="relative p-6 pb-4">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-2">
-                      {getCategoryIcon(offer.category)}
-                      <Badge className={getCategoryColor(offer.category)}>
-                        {offer.category || 'Special'}
-                      </Badge>
-                    </div>
-                    {!offer.image && (
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-primary">
-                          {offer.discountPercentage}%
-                        </div>
-                        <div className="text-sm text-gray-500">OFF</div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Offer Title */}
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {offer.title}
-                  </h3>
-
-                  {/* Offer Description */}
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                    {offer.description}
-                  </p>
-
-                  {/* Products Preview */}
-                  {offer.productIds && offer.productIds.length > 0 && (
-                    <div className="mb-4">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <ShoppingCart className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm font-medium text-gray-700">
-                          {offer.productIds.length} Product{offer.productIds.length > 1 ? 's' : ''}
-                        </span>
-                      </div>
-                      <div className="flex space-x-2">
-                        {offer.productIds.slice(0, 3).map((product) => (
-                          <div key={product._id} className="flex items-center space-x-1 text-xs text-gray-600">
-                            <span>•</span>
-                            <span className="truncate max-w-20">{product.name}</span>
-                          </div>
-                        ))}
-                        {offer.productIds.length > 3 && (
-                          <span className="text-xs text-gray-500">
-                            +{offer.productIds.length - 3} more
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Hover Buttons for offers without images */}
-                  {!offer.image && (
-                    <div className="absolute inset-0 bg-gradient-to-t from-white/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <div className="absolute bottom-4 left-4 right-4">
-                        <div className="flex space-x-2">
-                          <Button 
-                            size="sm" 
-                            className="flex-1 bg-white hover:bg-gray-100 text-gray-900 hover:scale-105 transition-all duration-200 text-xs border border-gray-300"
-                            onClick={() => handleViewOffer(offer)}
-                          >
-                            <Eye className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                            View
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            className="flex-1 bg-red-600 hover:bg-red-700 text-white hover:scale-105 transition-all duration-200 text-xs"
-                            onClick={() => handleClaimOffer(offer)}
-                            disabled={claimingOffer === offer._id || isExpired(offer.validUntil)}
-                          >
-                            {claimingOffer === offer._id ? (
-                              <>
-                                <div className="animate-spin h-3 w-3 md:h-4 md:w-4 mr-1 border-2 border-white border-t-transparent rounded-full"></div>
-                                Claiming...
-                              </>
-                            ) : (
-                              <>
-                                <Package className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                                Claim
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Offer Details */}
-                <div className="px-6 pb-4">
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center justify-between text-sm">
+                {/* Offer Content */}
+                <div className="p-6">
+                  {/* Offer Header */}
+                  <div className="relative p-6 pb-4">
+                    <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center space-x-2">
-                        <Calendar className="h-4 w-4 text-gray-500" />
-                        <span className="text-gray-600">Valid Until:</span>
+                        {getCategoryIcon(offer.category)}
+                        <Badge className={getCategoryColor(offer.category)}>
+                          {offer.category || 'Special'}
+                        </Badge>
                       </div>
-                      <span className={`font-medium ${
-                        isExpired(offer.validUntil) 
-                          ? 'text-red-600' 
-                          : isExpiringSoon(offer.validUntil)
-                          ? 'text-orange-600'
-                          : 'text-gray-900'
-                      }`}>
-                        {formatDate(offer.validUntil)}
-                      </span>
+                      {!offer.image && (
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-primary">
+                            {offer.discount}%
+                          </div>
+                          <div className="text-sm text-gray-500">OFF</div>
+                        </div>
+                      )}
                     </div>
 
-                    {offer.maxClaims && (
+                    {/* Offer Title */}
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      {offer.title}
+                    </h3>
+
+                    {/* Offer Description */}
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                      {offer.description}
+                    </p>
+
+                    {/* Products Preview */}
+                    {offer.productIds && offer.productIds.length > 0 && (
+                      <div className="mb-4">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Package className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm text-gray-600">
+                            {offer.productIds.length} product{offer.productIds.length > 1 ? 's' : ''} included
+                          </span>
+                        </div>
+                        <div className="flex space-x-2">
+                          {offer.productIds.slice(0, 3).map((product, index) => (
+                            <div key={product._id} className="flex items-center space-x-1 text-xs text-gray-500">
+                              <span>{product.name}</span>
+                              {index < Math.min(3, offer.productIds.length) - 1 && <span>,</span>}
+                            </div>
+                          ))}
+                          {offer.productIds.length > 3 && (
+                            <span className="text-xs text-gray-400">
+                              +{offer.productIds.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Hover Buttons for offers without images */}
+                    {!offer.image && (
+                      <div className="absolute inset-0 bg-gradient-to-t from-white/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="absolute bottom-4 left-4 right-4">
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              className="flex-1 bg-white hover:bg-gray-100 text-gray-900 hover:scale-105 transition-all duration-200 text-xs border border-gray-300"
+                              onClick={() => handleViewOffer(offer)}
+                            >
+                              <Eye className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                              View
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="flex-1 bg-red-600 hover:bg-red-700 text-white hover:scale-105 transition-all duration-200 text-xs"
+                              onClick={() => handleClaimOffer(offer)}
+                              disabled={claimingOffer === offer._id || isExpired(offer.validUntil)}
+                            >
+                              {claimingOffer === offer._id ? (
+                                <>
+                                  <div className="animate-spin h-3 w-3 md:h-4 md:w-4 mr-1 border-2 border-white border-t-transparent rounded-full"></div>
+                                  Claiming...
+                                </>
+                              ) : (
+                                <>
+                                  <Package className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                                  Claim
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Offer Details */}
+                  <div className="px-6 pb-4">
+                    <div className="space-y-2 mb-4">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Claims:</span>
-                        <span className="font-medium text-gray-900">
-                          {offer.claimedCount}/{offer.maxClaims}
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="h-4 w-4 text-gray-500" />
+                          <span className="text-gray-600">Valid Until:</span>
+                        </div>
+                        <span className={`font-medium ${
+                          isExpired(offer.validUntil) 
+                            ? 'text-red-600' 
+                            : isExpiringSoon(offer.validUntil)
+                            ? 'text-orange-600'
+                            : 'text-gray-900'
+                        }`}>
+                          {formatDate(offer.validUntil)}
                         </span>
                       </div>
-                    )}
-                  </div>
 
-                  {/* Status Badges */}
-                  <div className="flex items-center justify-between mb-4">
-                    {isExpired(offer.validUntil) && (
-                      <Badge variant="destructive" className="text-xs">
-                        Expired
-                      </Badge>
-                    )}
-                    {isExpiringSoon(offer.validUntil) && !isExpired(offer.validUntil) && (
-                      <Badge className="bg-orange-100 text-orange-800 text-xs">
-                        Expiring Soon
-                      </Badge>
-                    )}
-                    {offer.claimedCount > 0 && (
-                      <div className="flex items-center space-x-1 text-xs text-gray-500">
-                        <Star className="h-3 w-3" />
-                        <span>{offer.claimedCount} claimed</span>
+                      {offer.maxClaims && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Claims:</span>
+                          <span className="font-medium text-gray-900">
+                            {offer.claimedCount}/{offer.maxClaims}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Status Badges */}
+                    <div className="flex items-center justify-between mb-4">
+                      {isExpired(offer.validUntil) && (
+                        <Badge variant="destructive" className="text-xs">
+                          Expired
+                        </Badge>
+                      )}
+                      {isExpiringSoon(offer.validUntil) && !isExpired(offer.validUntil) && (
+                        <Badge className="bg-orange-100 text-orange-800 text-xs">
+                          Expiring Soon
+                        </Badge>
+                      )}
+                      {offer.claimedCount > 0 && (
+                        <div className="flex items-center space-x-1 text-xs text-gray-500">
+                          <Star className="h-3 w-3" />
+                          <span>{offer.claimedCount} claimed</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* User-friendly labels instead of technical details */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        {/* User-friendly target audience label */}
+                        <div className="flex items-center space-x-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
+                          {getTargetAudienceIcon(offer.targetAudience)}
+                          <span className="text-xs font-medium">{getTargetAudienceLabel(offer.targetAudience)}</span>
+                        </div>
+                        
+                        {/* User-friendly display location label */}
+                        <div className="flex items-center space-x-1 bg-green-50 text-green-700 px-2 py-1 rounded-full">
+                          <MapPin className="h-3 w-3" />
+                          <span className="text-xs font-medium">{getDisplayLocationLabel(offer.displayLocation)}</span>
+                        </div>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Action Button */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 text-sm text-gray-500">
-                      <span>Target: {offer.targetAudience}</span>
-                      <span>Location: {offer.displayLocation}</span>
                     </div>
                   </div>
-                </div>
 
-                {/* Terms */}
-                {offer.terms && (
-                  <div className="px-6 pb-4">
-                    <details className="text-xs text-gray-500">
-                      <summary className="cursor-pointer hover:text-gray-700">
-                        View Terms & Conditions
-                      </summary>
-                      <p className="mt-2 text-gray-600">{offer.terms}</p>
-                    </details>
-                  </div>
-                )}
+                  {/* Terms */}
+                  {offer.terms && (
+                    <div className="px-6 pb-4">
+                      <details className="text-xs text-gray-500">
+                        <summary className="cursor-pointer hover:text-gray-700">
+                          View Terms & Conditions
+                        </summary>
+                        <p className="mt-2 text-gray-600">{offer.terms}</p>
+                      </details>
+                    </div>
+                  )}
+                </div>
               </Card>
             ))}
           </div>

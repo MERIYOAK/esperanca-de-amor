@@ -80,7 +80,7 @@ const AdminLogin = () => {
         });
         
         // Redirect to admin dashboard
-        navigate('/admin/dashboard');
+        navigate('/admin-dashboard');
       } else {
         throw new Error(data.message || 'Login failed');
       }

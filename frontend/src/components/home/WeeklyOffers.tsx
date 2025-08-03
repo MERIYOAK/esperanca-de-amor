@@ -1,4 +1,4 @@
-import { Timer, TrendingUp, Package, Eye } from 'lucide-react';
+import { Timer, TrendingUp, Package, Eye, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,6 +23,7 @@ interface Offer {
   validUntil: string;
   isActive: boolean;
   originalPrice?: number;
+  claimedBy?: Array<{ user: string; claimedAt: string }>;
 }
 
 const WeeklyOffers = () => {
@@ -31,8 +32,14 @@ const WeeklyOffers = () => {
   const [claimingOffer, setClaimingOffer] = useState<string | null>(null);
   const { user } = useAuth();
   const { refreshCart } = useCart();
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Check if current user has claimed this offer
+  const hasUserClaimed = (offer: Offer) => {
+    if (!user || !offer.claimedBy) return false;
+    return offer.claimedBy.some((claim: any) => claim.user === user.id);
+  };
 
   // Format category name for display
   const formatCategoryName = (category: string) => {
@@ -144,9 +151,6 @@ const WeeklyOffers = () => {
   }, []); // Empty dependency array - only run once on mount
 
   const handleClaimOffer = async (offer: Offer) => {
-    console.log('Claim offer clicked for:', offer.title);
-    
-    // Check if user is authenticated
     if (!user) {
       toast({
         title: 'Authentication Required',
@@ -159,6 +163,14 @@ const WeeklyOffers = () => {
 
     try {
       setClaimingOffer(offer._id);
+
+      // Debug: Log the offer data being sent
+      console.log('Claiming offer:', {
+        offerId: offer._id,
+        offerTitle: offer.title,
+        user: user.id,
+        token: localStorage.getItem('token') ? 'exists' : 'missing'
+      });
 
       // Call the backend API to claim the offer
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/offers/claim`, {
@@ -175,8 +187,19 @@ const WeeklyOffers = () => {
 
       const data = await response.json();
 
-      if (data.success) {
-        // Refresh the cart to update the cart count and items
+      // Debug: Log the response
+      console.log('Claim offer response:', {
+        status: response.status,
+        success: data.success,
+        message: data.message,
+        data: data.data
+      });
+
+      if (response.ok && data.success) {
+        // Wait a moment for the backend to process the cart update
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Immediately refresh the cart to update the cart count and items
         await refreshCart();
         
         const productsCount = data.data.addedProducts?.length || offer.productIds.length;
@@ -191,7 +214,25 @@ const WeeklyOffers = () => {
         setTimeout(() => {
           navigate('/cart');
         }, 1500);
+      } else if (response.status === 400 && data.message?.includes('already claimed')) {
+        // Handle case where user has already claimed this offer
+        toast({
+          title: 'Already Claimed',
+          description: 'You have already claimed this offer. Check your cart for the discounted items!',
+          variant: 'default',
+        });
+        
+        // Navigate to cart to show the already claimed items
+        setTimeout(() => {
+          navigate('/cart');
+        }, 1500);
       } else {
+        // Debug: Log the error details
+        console.error('Claim offer failed:', {
+          status: response.status,
+          message: data.message,
+          data: data
+        });
         throw new Error(data.message || 'Failed to claim offer');
       }
       
@@ -295,34 +336,51 @@ const WeeklyOffers = () => {
                           <Eye className="h-3 w-3 md:h-4 md:w-4 mr-1" />
                           View
                         </Button>
-                        <Button 
-                          size="sm" 
-                          className="flex-1 bg-red-600 hover:bg-red-700 text-white hover:scale-105 transition-all duration-200 text-xs"
-                          onClick={() => handleClaimOffer(offer)}
-                          disabled={claimingOffer === offer._id}
-                        >
-                          {claimingOffer === offer._id ? (
-                            <>
-                              <div className="animate-spin h-3 w-3 md:h-4 md:w-4 mr-1 border-2 border-white border-t-transparent rounded-full"></div>
-                              Claiming...
-                            </>
-                          ) : (
-                            <>
-                              <Package className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                              Claim
-                            </>
-                          )}
-                        </Button>
+                        {hasUserClaimed(offer) ? (
+                          <Button 
+                            size="sm" 
+                            className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs"
+                            disabled
+                          >
+                            <Check className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                            Claimed
+                          </Button>
+                        ) : (
+                          <Button 
+                            size="sm" 
+                            className="flex-1 bg-red-600 hover:bg-red-700 text-white hover:scale-105 transition-all duration-200 text-xs"
+                            onClick={() => handleClaimOffer(offer)}
+                            disabled={claimingOffer === offer._id}
+                          >
+                            {claimingOffer === offer._id ? (
+                              <>
+                                <div className="animate-spin h-3 w-3 md:h-4 md:w-4 mr-1 border-2 border-white border-t-transparent rounded-full"></div>
+                                Claiming...
+                              </>
+                            ) : (
+                              <>
+                                <Package className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                                Claim
+                              </>
+                            )}
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <CardContent className="p-3 md:p-6">
-                  <div className="mb-2">
+                  <div className="mb-2 flex items-center justify-between">
                     <span className="text-xs text-red-700 font-medium bg-red-100 px-2 py-1 rounded-full">
                       {offer.category || 'Special Offer'}
                     </span>
+                    {hasUserClaimed(offer) && (
+                      <span className="text-xs text-green-700 font-medium bg-green-100 px-2 py-1 rounded-full flex items-center">
+                        <Check className="h-3 w-3 mr-1" />
+                        Claimed
+                      </span>
+                    )}
                   </div>
                   
                   <h3 className="text-sm md:text-lg font-semibold mb-2 group-hover:text-red-600 transition-colors duration-200 line-clamp-2">

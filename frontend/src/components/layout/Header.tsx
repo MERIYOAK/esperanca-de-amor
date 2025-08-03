@@ -17,7 +17,7 @@ const Header = () => {
   const [imageError, setImageError] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { user, isLoading } = useAuth();
-  const { cartItems } = useCart();
+  const { cartItems, isLoading: isCartLoading } = useCart();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -283,9 +283,15 @@ const Header = () => {
               aria-label="Shopping cart"
               title={user ? "View your cart" : "Login to view cart"}
             >
-              <ShoppingCart className="h-6 w-6" />
+              {isCartLoading ? (
+                <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <ShoppingCart className="h-6 w-6" />
+              )}
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                <span className={`absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium ${
+                  isCartLoading ? 'animate-pulse' : ''
+                }`}>
                   {cartCount > 99 ? '99+' : cartCount}
                 </span>
               )}

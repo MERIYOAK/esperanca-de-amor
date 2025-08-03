@@ -171,7 +171,11 @@ const OfferDetail = () => {
 
       const data = await response.json();
 
-      if (data.success) {
+      if (response.ok && data.success) {
+        // Wait a moment for the backend to process the cart update
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Immediately refresh the cart to update the cart count and items
         await refreshCart();
         
         const productsCount = data.data.addedProducts?.length || offer.productIds.length;
@@ -181,6 +185,18 @@ const OfferDetail = () => {
           variant: 'default',
         });
         
+        setTimeout(() => {
+          navigate('/cart');
+        }, 1500);
+      } else if (response.status === 400 && data.message?.includes('already claimed')) {
+        // Handle case where user has already claimed this offer
+        toast({
+          title: 'Already Claimed',
+          description: 'You have already claimed this offer. Check your cart for the discounted items!',
+          variant: 'default',
+        });
+        
+        // Navigate to cart to show the already claimed items
         setTimeout(() => {
           navigate('/cart');
         }, 1500);

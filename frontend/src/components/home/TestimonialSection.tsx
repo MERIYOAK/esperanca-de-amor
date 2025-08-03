@@ -5,11 +5,11 @@ const TestimonialSection = () => {
   const testimonials = [
     {
       id: 1,
-      name: 'Maria Santos',
+      name: 'Emanuelle Santos',
       location: 'Luanda, Angola',
       rating: 5,
       text: 'Esperança de Amor has the freshest products in the city. Their service is exceptional and delivery is always on time!',
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b2e5c91d?w=80&h=80&fit=crop&crop=face'
+      avatar: 'https://tse2.mm.bing.net/th/id/OIP.IrUBHhdMo6wWLFueKNreRwHaHa?rs=1&pid=ImgDetMain&o=7&rm=3'
     },
     {
       id: 2,

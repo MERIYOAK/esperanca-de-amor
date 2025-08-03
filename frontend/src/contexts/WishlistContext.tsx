@@ -49,7 +49,7 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({ children }) 
   const { user, token } = useAuth();
   const { toast } = useToast();
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   // Product ID mapping for demo products to MongoDB ObjectIds
   // This mapping will be updated when we fetch real products from the backend
@@ -74,15 +74,14 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({ children }) 
     return reverseMapping;
   };
 
-  // Fetch products to get the mapping of demo IDs to MongoDB ObjectIds
+  // Fetch product mapping from backend
   const fetchProductMapping = async () => {
-    // Don't fetch if user is not authenticated
     if (!user || !token) {
       return;
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/products`);
+      const response = await fetch(`${API_BASE_URL}/api/products`);
       if (response.ok) {
         const data = await response.json();
         const mapping: Record<number, string> = {};
@@ -168,7 +167,7 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({ children }) 
 
     try {
       setIsLoading(true);
-      const response = await fetch(`${API_BASE_URL}/wishlist`, {
+      const response = await fetch(`${API_BASE_URL}/api/wishlist`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -177,47 +176,34 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({ children }) 
 
       if (response.ok) {
         const data = await response.json();
+        // Backend returns data.data as the wishlist object, we need data.data.items
+        const backendItems = data.data?.items || [];
         
-        // Check if data.data.items exists and is an array
-        if (!data.data || !data.data.items || !Array.isArray(data.data.items)) {
-          console.error('Invalid wishlist data structure:', data);
-          setWishlistItems([]);
-          return;
-        }
+        // Transform backend items to frontend format
+        const transformedItems = backendItems.map((item: any) => ({
+          id: item._id,
+          product: {
+            id: item.product._id, // Use the product's _id as id
+            name: item.product.name,
+            price: item.product.price,
+            originalPrice: item.product.originalPrice,
+            image: item.product.images?.[0]?.url || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop',
+            category: item.product.category?.name || 'Unknown Category',
+            rating: item.product.rating || 4.5,
+            isOnSale: item.product.isOnSale,
+            discount: item.product.discount,
+            stock: item.product.stock || 0
+          },
+          addedAt: new Date(item.addedAt)
+        }));
         
-        // Transform backend data to frontend format
-        const transformedItems = data.data.items.map((item: any) => {
-          const reverseMapping = getReverseMapping();
-          const frontendId = reverseMapping[item.product._id];
-
-          return {
-            id: item._id,
-            product: {
-              id: frontendId, // Use the frontend ID
-              name: item.product.name,
-              price: item.product.price,
-              originalPrice: item.product.originalPrice,
-              image: item.product.images?.[0]?.url || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop',
-              category: item.product.category?.name || 'Unknown Category',
-              rating: item.product.rating || 4.5,
-              isOnSale: item.product.isOnSale,
-              discount: item.product.discount,
-              stock: item.product.stock || 0
-            },
-            addedAt: new Date(item.addedAt)
-          };
-        });
         setWishlistItems(transformedItems);
-      } else if (response.status === 404) {
-        // Wishlist doesn't exist yet, use empty array
-        setWishlistItems([]);
       } else {
-        throw new Error('Failed to fetch wishlist');
+        setWishlistItems([]);
       }
     } catch (error) {
       console.error('Error fetching wishlist:', error);
-      // For demo purposes, use demo data if backend fails
-      setWishlistItems(demoWishlistItems);
+      setWishlistItems([]);
     } finally {
       setIsLoading(false);
     }
@@ -234,110 +220,78 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({ children }) 
       return;
     }
 
-    // Convert demo product ID to MongoDB ObjectId
-    const realProductId = productIdMapping[product.id];
-    if (!realProductId) {
+    // Check if this is a demo product
+    const isDemoProduct = demoWishlistItems.some(item => item.product.id === product.id);
+    
+    if (isDemoProduct) {
+      // Handle demo products locally
+      const newItem: WishlistItem = {
+        id: `demo-${Date.now()}`,
+        product,
+        addedAt: new Date()
+      };
+      
+      setWishlistItems(prev => {
+        if (!Array.isArray(prev)) {
+          return [newItem];
+        }
+        return [...prev, newItem];
+      });
+      
       toast({
-        title: "Error",
-        description: "Product not found in database",
-        variant: "destructive",
+        title: "Added to wishlist",
+        description: "Item has been added to your wishlist",
       });
       return;
     }
 
     try {
       setIsLoading(true);
-      const response = await fetch(`${API_BASE_URL}/wishlist/add`, {
+      const response = await fetch(`${API_BASE_URL}/api/wishlist/add`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ productId: realProductId }),
+        body: JSON.stringify({ productId: product._id || product.id }),
       });
 
       if (response.ok) {
         const data = await response.json();
+        // Backend returns data.data as the wishlist object, we need data.data.items
+        const backendItems = data.data?.items || [];
         
-        // Check if data.data.items exists and is an array
-        if (!data.data || !data.data.items || !Array.isArray(data.data.items)) {
-          console.error('Invalid wishlist data structure:', data);
-          throw new Error('Invalid wishlist data received from server');
-        }
-        
-        // Transform backend data to frontend format
-        const transformedItems = data.data.items.map((item: any) => {
-          const reverseMapping = getReverseMapping();
-          const frontendId = reverseMapping[item.product._id];
-
-          return {
-            id: item._id,
-            product: {
-              id: frontendId, // Use the frontend ID
-              name: item.product.name,
-              price: item.product.price,
-              originalPrice: item.product.originalPrice,
-              image: item.product.images?.[0]?.url || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop',
-              category: item.product.category?.name || 'Unknown Category',
-              rating: item.product.rating || 4.5,
-              isOnSale: item.product.isOnSale,
-              discount: item.product.discount,
-              stock: item.product.stock || 0
-            },
-            addedAt: new Date(item.addedAt)
-          };
-        });
+        // Transform backend items to frontend format
+        const transformedItems = backendItems.map((item: any) => ({
+          id: item._id,
+          product: {
+            id: item.product._id, // Use the product's _id as id
+            name: item.product.name,
+            price: item.product.price,
+            originalPrice: item.product.originalPrice,
+            image: item.product.images?.[0]?.url || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop',
+            category: item.product.category?.name || 'Unknown Category',
+            rating: item.product.rating || 4.5,
+            isOnSale: item.product.isOnSale,
+            discount: item.product.discount,
+            stock: item.product.stock || 0
+          },
+          addedAt: new Date(item.addedAt)
+        }));
         
         setWishlistItems(transformedItems);
         toast({
           title: "Added to wishlist",
-          description: `${product.name} has been added to your wishlist`,
+          description: "Item has been added to your wishlist",
         });
       } else {
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch (jsonError) {
-          console.error('Failed to parse error response:', jsonError);
-          errorData = { message: 'Unknown error occurred' };
-        }
-        
-        console.log('Error response:', { status: response.status, data: errorData });
-        
-        // Handle the case where product is already in wishlist
-        if (response.status === 400 && errorData.message && (
-          errorData.message.includes('already in your wishlist') ||
-          errorData.message.includes('Product is already in your wishlist')
-        )) {
-          toast({
-            title: "Already in wishlist",
-            description: "This item is already in your wishlist",
-            variant: "default",
-          });
-          return;
-        }
-        
-        throw new Error(errorData.message || 'Failed to add item to wishlist');
+        throw new Error('Failed to add item to wishlist');
       }
     } catch (error) {
       console.error('Error adding to wishlist:', error);
-      
-      // Check if this is a 400 error about item already being in wishlist
-      if (error instanceof Error && (
-        error.message.includes('already in your wishlist') ||
-        error.message.includes('Product is already in your wishlist')
-      )) {
-        toast({
-          title: "Already in wishlist",
-          description: "This item is already in your wishlist",
-          variant: "default",
-        });
-        return;
-      }
-      
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to add item to wishlist",
+        description: "Failed to add item to wishlist",
         variant: "destructive",
       });
     } finally {
@@ -356,9 +310,24 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({ children }) 
       return;
     }
 
+    // Handle demo items
+    if (itemId.startsWith('demo-')) {
+      setWishlistItems(prev => {
+        if (!Array.isArray(prev)) {
+          return [];
+        }
+        return prev.filter(item => item.id !== itemId);
+      });
+      toast({
+        title: "Item removed",
+        description: "Product has been removed from your wishlist",
+      });
+      return;
+    }
+
     try {
       setIsLoading(true);
-      const response = await fetch(`${API_BASE_URL}/wishlist/${itemId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/wishlist/${itemId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -368,50 +337,40 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({ children }) 
 
       if (response.ok) {
         const data = await response.json();
+        // Backend returns data.data as the wishlist object, we need data.data.items
+        const backendItems = data.data?.items || [];
         
-        // Check if data.data.items exists and is an array
-        if (!data.data || !data.data.items || !Array.isArray(data.data.items)) {
-          console.error('Invalid wishlist data structure:', data);
-          throw new Error('Invalid wishlist data received from server');
-        }
-        
-        // Transform backend data to frontend format
-        const transformedItems = data.data.items.map((item: any) => {
-          const reverseMapping = getReverseMapping();
-          const frontendId = reverseMapping[item.product._id];
-
-          return {
-            id: item._id,
-            product: {
-              id: frontendId, // Use the frontend ID
-              name: item.product.name,
-              price: item.product.price,
-              originalPrice: item.product.originalPrice,
-              image: item.product.images?.[0]?.url || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop',
-              category: item.product.category?.name || 'Unknown Category',
-              rating: item.product.rating || 4.5,
-              isOnSale: item.product.isOnSale,
-              discount: item.product.discount,
-              stock: item.product.stock || 0
-            },
-            addedAt: new Date(item.addedAt)
-          };
-        });
+        // Transform backend items to frontend format
+        const transformedItems = backendItems.map((item: any) => ({
+          id: item._id,
+          product: {
+            id: item.product._id, // Use the product's _id as id
+            name: item.product.name,
+            price: item.product.price,
+            originalPrice: item.product.originalPrice,
+            image: item.product.images?.[0]?.url || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop',
+            category: item.product.category?.name || 'Unknown Category',
+            rating: item.product.rating || 4.5,
+            isOnSale: item.product.isOnSale,
+            discount: item.product.discount,
+            stock: item.product.stock || 0
+          },
+          addedAt: new Date(item.addedAt)
+        }));
         
         setWishlistItems(transformedItems);
         toast({
-          title: "Removed from wishlist",
-          description: "Item has been removed from your wishlist",
+          title: "Item removed",
+          description: "Product has been removed from your wishlist",
         });
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to remove item from wishlist');
+        throw new Error('Failed to remove item from wishlist');
       }
     } catch (error) {
       console.error('Error removing from wishlist:', error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to remove item from wishlist",
+        description: "Failed to remove item from wishlist",
         variant: "destructive",
       });
     } finally {
@@ -421,6 +380,9 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({ children }) 
 
   // Check if item is in wishlist
   const isInWishlist = (productId: number): boolean => {
+    if (!Array.isArray(wishlistItems)) {
+      return false;
+    }
     return wishlistItems.some(item => item.product.id === productId);
   };
 
@@ -435,9 +397,17 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({ children }) 
       return;
     }
 
+    // Clear demo items
+    setWishlistItems(prev => {
+      if (!Array.isArray(prev)) {
+        return [];
+      }
+      return prev.filter(item => !item.id.startsWith('demo-'));
+    });
+
     try {
       setIsLoading(true);
-      const response = await fetch(`${API_BASE_URL}/wishlist/clear`, {
+      const response = await fetch(`${API_BASE_URL}/api/wishlist/clear`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -452,14 +422,13 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({ children }) 
           description: "All items have been removed from your wishlist",
         });
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to clear wishlist');
+        throw new Error('Failed to clear wishlist');
       }
     } catch (error) {
       console.error('Error clearing wishlist:', error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to clear wishlist",
+        description: "Failed to clear wishlist",
         variant: "destructive",
       });
     } finally {

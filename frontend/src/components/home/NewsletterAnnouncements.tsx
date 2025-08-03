@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Megaphone, Calendar, ExternalLink } from 'lucide-react';
+import { Megaphone, Calendar, ExternalLink, Users, MapPin } from 'lucide-react';
 
 interface Announcement {
   _id: string;
@@ -79,6 +79,48 @@ const NewsletterAnnouncements = () => {
         return <span className="inline-block bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full ml-2">HIGH</span>;
       default:
         return null;
+    }
+  };
+
+  // Convert target audience to user-friendly label
+  const getTargetAudienceLabel = (targetAudience: string) => {
+    switch (targetAudience) {
+      case 'all':
+        return 'For Everyone';
+      case 'registered':
+        return 'Members Only';
+      case 'guests':
+        return 'New Customers';
+      default:
+        return 'For Everyone';
+    }
+  };
+
+  // Convert display location to user-friendly label
+  const getDisplayLocationLabel = (displayLocation: string) => {
+    switch (displayLocation) {
+      case 'top':
+        return 'Featured';
+      case 'bottom':
+        return 'Updates';
+      case 'sidebar':
+        return 'News';
+      case 'modal':
+        return 'Important';
+      default:
+        return 'News';
+    }
+  };
+
+  // Get appropriate icon for target audience
+  const getTargetAudienceIcon = (targetAudience: string) => {
+    switch (targetAudience) {
+      case 'registered':
+        return <Users className="h-3 w-3" />;
+      case 'guests':
+        return <Users className="h-3 w-3" />;
+      default:
+        return <Users className="h-3 w-3" />;
     }
   };
 
@@ -171,8 +213,17 @@ const NewsletterAnnouncements = () => {
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4 text-sm text-gray-500">
-                      <span>Target: {announcement.targetAudience}</span>
-                      <span>Location: {announcement.displayLocation}</span>
+                      {/* User-friendly target audience label */}
+                      <div className="flex items-center space-x-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
+                        {getTargetAudienceIcon(announcement.targetAudience)}
+                        <span className="text-xs font-medium">{getTargetAudienceLabel(announcement.targetAudience)}</span>
+                      </div>
+                      
+                      {/* User-friendly display location label */}
+                      <div className="flex items-center space-x-1 bg-green-50 text-green-700 px-2 py-1 rounded-full">
+                        <MapPin className="h-3 w-3" />
+                        <span className="text-xs font-medium">{getDisplayLocationLabel(announcement.displayLocation)}</span>
+                      </div>
                     </div>
                     
                     <Button

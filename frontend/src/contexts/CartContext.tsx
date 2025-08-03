@@ -56,7 +56,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const { user, token } = useAuth();
   const { toast } = useToast();
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   // Demo products for testing (since we don't have real products in DB yet)
   const demoProducts = {
@@ -137,7 +137,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   // Demo cart state for testing
   const [demoCart, setDemoCart] = useState<CartItem[]>([]);
 
-  // Fetch cart from backend
+  // Fetch cart from server
   const fetchCart = async () => {
     if (!user || !token) {
       setCart(null);
@@ -146,25 +146,20 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
     try {
       setIsLoading(true);
-      const response = await fetch(`${API_BASE_URL}/cart`, {
+      const response = await fetch(`${API_BASE_URL}/api/cart`, {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
         },
       });
 
       if (response.ok) {
         const data = await response.json();
         setCart(data.data);
-      } else if (response.status === 404) {
-        // Cart doesn't exist yet, create it
-        setCart(null);
       } else {
-        throw new Error('Failed to fetch cart');
+        setCart(null);
       }
     } catch (error) {
       console.error('Error fetching cart:', error);
-      // For demo purposes, we'll use local state if backend fails
       setCart(null);
     } finally {
       setIsLoading(false);
@@ -215,7 +210,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
     try {
       setIsLoading(true);
-      const response = await fetch(`${API_BASE_URL}/cart/add`, {
+      const response = await fetch(`${API_BASE_URL}/api/cart/add`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -269,7 +264,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
     try {
       setIsLoading(true);
-      const response = await fetch(`${API_BASE_URL}/cart/${itemId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/cart/${itemId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -310,24 +305,21 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       return;
     }
 
-    if (quantity < 1) {
-      await removeFromCart(itemId);
-      return;
-    }
-
     // Handle demo items
     if (itemId.startsWith('demo-')) {
-      setDemoCart(prev => 
-        prev.map(item => 
-          item.id === itemId ? { ...item, quantity } : item
-        )
-      );
+      setDemoCart(prev => prev.map(item => 
+        item.id === itemId ? { ...item, quantity } : item
+      ));
+      toast({
+        title: "Quantity updated",
+        description: "Item quantity has been updated",
+      });
       return;
     }
 
     try {
       setIsLoading(true);
-      const response = await fetch(`${API_BASE_URL}/cart/${itemId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/cart/${itemId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -339,11 +331,15 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       if (response.ok) {
         const data = await response.json();
         setCart(data.data);
+        toast({
+          title: "Quantity updated",
+          description: "Item quantity has been updated",
+        });
       } else {
-        throw new Error('Failed to update cart item');
+        throw new Error('Failed to update item quantity');
       }
     } catch (error) {
-      console.error('Error updating cart:', error);
+      console.error('Error updating quantity:', error);
       toast({
         title: "Error",
         description: "Failed to update item quantity",
@@ -370,7 +366,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
     try {
       setIsLoading(true);
-      const response = await fetch(`${API_BASE_URL}/cart/clear`, {
+      const response = await fetch(`${API_BASE_URL}/api/cart/clear`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -401,7 +397,14 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   // Refresh cart
   const refreshCart = async () => {
-    await fetchCart();
+    try {
+      setIsLoading(true);
+      await fetchCart();
+    } catch (error) {
+      console.error('Error refreshing cart:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Fetch cart when user changes
@@ -411,6 +414,15 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   // Combine real cart items with demo cart items
   const cartItems = [...(cart?.items || []), ...demoCart];
+
+  // Log cart updates for debugging
+  useEffect(() => {
+    console.log('Cart updated:', {
+      cartItemsCount: cartItems.length,
+      totalQuantity: cartItems.reduce((total, item) => total + item.quantity, 0),
+      cart: cart ? 'exists' : 'null'
+    });
+  }, [cartItems, cart]);
 
   const value: CartContextType = {
     cart,

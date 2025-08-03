@@ -1,29 +1,14 @@
 import { ArrowRight, ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 const CategorySection = () => {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isHovered, setIsHovered] = useState<number | null>(null);
 
-  // Format category name for display
-  const formatCategoryName = (category: string) => {
-    if (!category) return 'Unknown Category';
-    
-    // Convert kebab-case to Title Case
-    return category
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  };
-
-  // Handle category click
-  const handleCategoryClick = (categoryName: string) => {
-    navigate(`/shop?category=${categoryName}`);
-  };
-
-  const categories = [
+  // Memoize categories to prevent unnecessary re-renders
+  const categories = useMemo(() => [
     {
       id: 1,
       name: 'foodstuffs',
@@ -47,7 +32,7 @@ const CategorySection = () => {
       name: 'beverages',
       displayName: 'Beverages',
       description: 'Refreshing drinks and beverages',
-      image: 'https://images.pexels.com/photos/3028500/pexels-photo-3028500.jpeg',
+      image: 'https://images.pexels.com/photos/3028500/pexels-photo-3028500.jpeg?w=400&h=300&fit=crop',
       color: 'from-green-500 to-green-600',
       icon: '🥤'
     },
@@ -65,7 +50,7 @@ const CategorySection = () => {
       name: 'construction-materials',
       displayName: 'Construction Materials',
       description: 'Building and construction supplies',
-      image: 'https://images.pexels.com/photos/259988/pexels-photo-259988.jpeg',
+      image: 'https://images.pexels.com/photos/259988/pexels-photo-259988.jpeg?w=400&h=300&fit=crop',
       color: 'from-orange-500 to-orange-600',
       icon: '🏗️'
     },
@@ -74,7 +59,7 @@ const CategorySection = () => {
       name: 'plastics',
       displayName: 'Plastics',
       description: 'Plastic products and containers',
-      image: 'https://images.pexels.com/photos/3962260/pexels-photo-3962260.jpeg',
+      image: 'https://images.pexels.com/photos/3962260/pexels-photo-3962260.jpeg?w=400&h=300&fit=crop',
       color: 'from-cyan-500 to-cyan-600',
       icon: '🥤'
     },
@@ -83,7 +68,7 @@ const CategorySection = () => {
       name: 'cosmetics',
       displayName: 'Cosmetics',
       description: 'Beauty and personal care products',
-      image: 'https://images.pexels.com/photos/3018845/pexels-photo-3018845.jpeg',
+      image: 'https://images.pexels.com/photos/3018845/pexels-photo-3018845.jpeg?w=400&h=300&fit=crop',
       color: 'from-pink-500 to-pink-600',
       icon: '💄'
     },
@@ -92,7 +77,7 @@ const CategorySection = () => {
       name: 'powder-detergent',
       displayName: 'Powder Detergent',
       description: 'Laundry and cleaning powders',
-      image: 'https://images.pexels.com/photos/5078583/pexels-photo-5078583.jpeg',
+      image: 'https://images.pexels.com/photos/5078583/pexels-photo-5078583.jpeg?w=400&h=300&fit=crop',
       color: 'from-indigo-500 to-indigo-600',
       icon: '🧼'
     },
@@ -101,7 +86,7 @@ const CategorySection = () => {
       name: 'liquid-detergent',
       displayName: 'Liquid Detergent',
       description: 'Liquid cleaning and laundry products',
-      image: 'https://images.pexels.com/photos/7351645/pexels-photo-7351645.jpeg',
+      image: 'https://images.pexels.com/photos/7351645/pexels-photo-7351645.jpeg?w=400&h=300&fit=crop',
       color: 'from-teal-500 to-teal-600',
       icon: '🧴'
     },
@@ -110,7 +95,7 @@ const CategorySection = () => {
       name: 'juices',
       displayName: 'Juices',
       description: 'Fresh and packaged juices',
-      image: 'https://images.pexels.com/photos/5837002/pexels-photo-5837002.jpeg',
+      image: 'https://images.pexels.com/photos/5837002/pexels-photo-5837002.jpeg?w=400&h=300&fit=crop',
       color: 'from-emerald-500 to-emerald-600',
       icon: '🧃'
     },
@@ -119,7 +104,7 @@ const CategorySection = () => {
       name: 'dental-care',
       displayName: 'Dental Care',
       description: 'Oral hygiene and dental products',
-      image: 'https://images.pexels.com/photos/4045700/pexels-photo-4045700.jpeg',
+      image: 'https://images.pexels.com/photos/4045700/pexels-photo-4045700.jpeg?w=400&h=300&fit=crop',
       color: 'from-amber-500 to-amber-600',
       icon: '🦷'
     },
@@ -128,28 +113,47 @@ const CategorySection = () => {
       name: 'beef',
       displayName: 'Beef',
       description: 'Fresh and processed beef products',
-      image: 'https://images.pexels.com/photos/65175/pexels-photo-65175.jpeg',
+      image: 'https://images.pexels.com/photos/65175/pexels-photo-65175.jpeg?w=400&h=300&fit=crop',
       color: 'from-gray-500 to-gray-600',
       icon: '🥩'
     }
-  ];
+  ], []);
 
-  const slidesPerView = 4;
-  const totalSlides = Math.ceil(categories.length / slidesPerView);
+  // Memoize carousel calculations
+  const { slidesPerView, totalSlides } = useMemo(() => {
+    const slidesPerView = 4;
+    const totalSlides = Math.ceil(categories.length / slidesPerView);
+    return { slidesPerView, totalSlides };
+  }, [categories.length]);
 
-  const nextSlide = () => {
+  // Memoize navigation functions
+  const nextSlide = useCallback(() => {
     setCurrentSlide((prev) => (prev + 1) % totalSlides);
-  };
+  }, [totalSlides]);
 
-  const prevSlide = () => {
+  const prevSlide = useCallback(() => {
     setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
-  };
+  }, [totalSlides]);
 
-  // Auto-advance slides
+  // Memoize category click handler
+  const handleCategoryClick = useCallback((categoryName: string) => {
+    navigate(`/shop?category=${categoryName}`);
+  }, [navigate]);
+
+  // Memoize hover handlers
+  const handleMouseEnter = useCallback((id: number) => {
+    setIsHovered(id);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsHovered(null);
+  }, []);
+
+  // Optimized auto-advance with reduced frequency
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % totalSlides);
-    }, 5000);
+    }, 8000); // Increased from 5000ms to 8000ms
 
     return () => clearInterval(interval);
   }, [totalSlides]);
@@ -177,14 +181,14 @@ const CategorySection = () => {
           {/* Navigation Buttons */}
           <button
             onClick={prevSlide}
-            className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-12 md:h-12 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-white transition-all duration-300 opacity-0 group-hover:opacity-100 hover:scale-110"
+            className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-12 md:h-12 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-white transition-all duration-200 opacity-0 group-hover:opacity-100 hover:scale-105"
           >
             <ChevronLeft className="w-4 h-4 md:w-6 md:h-6" />
           </button>
 
           <button
             onClick={nextSlide}
-            className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-12 md:h-12 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-white transition-all duration-300 opacity-0 group-hover:opacity-100 hover:scale-110"
+            className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-12 md:h-12 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-white transition-all duration-200 opacity-0 group-hover:opacity-100 hover:scale-105"
           >
             <ChevronRight className="w-4 h-4 md:w-6 md:h-6" />
           </button>
@@ -192,7 +196,7 @@ const CategorySection = () => {
           {/* Categories Grid */}
           <div className="overflow-hidden py-4 md:py-8">
             <div 
-              className="flex transition-transform duration-700 ease-out"
+              className="flex transition-transform duration-500 ease-out"
               style={{ transform: `translateX(-${currentSlide * 100}%)` }}
             >
               {Array.from({ length: totalSlides }, (_, slideIndex) => (
@@ -200,16 +204,16 @@ const CategorySection = () => {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-2 md:px-4">
                     {categories
                       .slice(slideIndex * slidesPerView, (slideIndex + 1) * slidesPerView)
-                      .map((category, index) => (
+                      .map((category) => (
                         <div
                           key={category.id}
                           className="relative group/category cursor-pointer"
-                          onMouseEnter={() => setIsHovered(category.id)}
-                          onMouseLeave={() => setIsHovered(null)}
+                          onMouseEnter={() => handleMouseEnter(category.id)}
+                          onMouseLeave={handleMouseLeave}
                           onClick={() => handleCategoryClick(category.name)}
                         >
                           {/* Category Card */}
-                          <div className="relative h-32 md:h-48 rounded-xl md:rounded-2xl overflow-hidden bg-white shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2">
+                          <div className="relative h-32 md:h-48 rounded-xl md:rounded-2xl overflow-hidden bg-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                             {/* Background Gradient */}
                             <div className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-10`}></div>
                             
@@ -218,7 +222,8 @@ const CategorySection = () => {
                               <img
                                 src={category.image}
                                 alt={category.displayName}
-                                className="w-full h-full object-cover transition-transform duration-700 group-hover/category:scale-110"
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover/category:scale-105"
+                                loading="lazy"
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
                             </div>
@@ -240,22 +245,20 @@ const CategorySection = () => {
                                 </p>
                                 
                                 {/* Animated Arrow */}
-                                <div className="flex items-center text-white/80 group-hover/category:text-white transition-colors duration-300">
+                                <div className="flex items-center text-white/80 group-hover/category:text-white transition-colors duration-200">
                                   <span className="text-xs font-medium">Explore</span>
-                                  <ArrowRight className="w-2 h-2 md:w-3 md:h-3 ml-1 group-hover/category:translate-x-1 transition-transform duration-300" />
+                                  <ArrowRight className="w-2 h-2 md:w-3 md:h-3 ml-1 group-hover/category:translate-x-1 transition-transform duration-200" />
                                 </div>
                               </div>
                             </div>
 
                             {/* Hover Effect Overlay */}
-                            <div className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-0 group-hover/category:opacity-20 transition-opacity duration-500`}></div>
+                            <div className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-0 group-hover/category:opacity-15 transition-opacity duration-300`}></div>
                           </div>
 
-                          {/* Floating Animation */}
+                          {/* Floating Animation - Simplified */}
                           <div 
-                            className={`absolute inset-0 rounded-xl md:rounded-2xl bg-gradient-to-br ${category.color} opacity-0 group-hover/category:opacity-10 transition-opacity duration-500 -z-10 blur-xl ${
-                              isHovered === category.id ? 'animate-float' : ''
-                            }`}
+                            className={`absolute inset-0 rounded-xl md:rounded-2xl bg-gradient-to-br ${category.color} opacity-0 group-hover/category:opacity-5 transition-opacity duration-300 -z-10 blur-lg`}
                           ></div>
                         </div>
                       ))}
@@ -271,7 +274,7 @@ const CategorySection = () => {
               <button
                 key={index}
                 onClick={() => setCurrentSlide(index)}
-                className={`w-2 h-2 md:w-3 md:h-3 rounded-full transition-all duration-300 ${
+                className={`w-2 h-2 md:w-3 md:h-3 rounded-full transition-all duration-200 ${
                   index === currentSlide 
                     ? 'bg-gradient-to-r from-red-500 to-red-600 scale-125' 
                     : 'bg-gray-300 hover:bg-gray-400'
@@ -285,7 +288,7 @@ const CategorySection = () => {
         <div className="text-center mt-8 md:mt-12 animate-fadeInUp">
           <button
             onClick={() => navigate('/shop')}
-            className="inline-flex items-center gap-2 px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-full hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl text-sm md:text-base"
+            className="inline-flex items-center gap-2 px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-full hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl text-sm md:text-base"
           >
             <ShoppingBag className="w-4 h-4 md:w-5 md:h-5" />
             View All Categories

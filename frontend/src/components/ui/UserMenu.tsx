@@ -31,7 +31,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ isOpen, onClose }) => {
   };
 
   const handleAdminDashboardClick = () => {
-    navigate('/admin');
+    navigate('/admin-dashboard');
     onClose();
   };
 
