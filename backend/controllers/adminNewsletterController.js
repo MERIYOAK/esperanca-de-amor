@@ -181,6 +181,8 @@ const sendNewsletterUpdate = asyncHandler(async (req, res) => {
         .content { padding: 20px; }
         .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; }
         .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }
+        .unsubscribe { color: #666; text-decoration: none; }
+        .unsubscribe:hover { text-decoration: underline; }
       </style>
     </head>
     <body>
@@ -194,7 +196,7 @@ const sendNewsletterUpdate = asyncHandler(async (req, res) => {
         </div>
         <div class="footer">
           <p>Thank you for subscribing to our newsletter!</p>
-          <p><a href="${process.env.FRONTEND_URL}/unsubscribe">Unsubscribe</a></p>
+          <p><a href="${process.env.FRONTEND_URL}/unsubscribe?email={{emailEncoded}}" class="unsubscribe">Unsubscribe</a></p>
         </div>
       </div>
     </body>
@@ -212,7 +214,10 @@ const sendNewsletterUpdate = asyncHandler(async (req, res) => {
         from: process.env.SMTP_USER,
         to: subscriber.email,
         subject: subject,
-        html: emailTemplate.replace('{{name}}', subscriber.name || 'Valued Customer')
+        html: emailTemplate
+          .replace('{{name}}', subscriber.name || 'Valued Customer')
+          .replace('{{email}}', subscriber.email)
+          .replace('{{emailEncoded}}', encodeURIComponent(subscriber.email))
       });
       
       // Update subscriber stats
@@ -245,27 +250,53 @@ const sendNewsletterUpdate = asyncHandler(async (req, res) => {
 
 // Export subscribers to CSV
 const exportSubscribers = asyncHandler(async (req, res) => {
-  const { format = 'csv' } = req.query;
+  const { status, startDate, endDate } = req.query;
 
-  const subscribers = await Newsletter.find({ isActive: true })
-    .select('email name createdAt')
-    .sort({ createdAt: -1 });
+  const filter = {};
+  
+  // Add status filter if provided
+  if (status && status !== 'all' && status !== '') {
+    filter.isActive = status === 'active';
+  }
+  
+  // Add date range filter if provided
+  if (startDate && endDate) {
+    try {
+      filter.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    } catch (error) {
+      console.error('❌ Invalid date format:', error);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid date format provided'
+      });
+    }
+  }
 
-  if (format === 'csv') {
-    const csvHeader = 'Email,Name,Subscribed Date\n';
+  try {
+    const subscribers = await Newsletter.find(filter)
+      .select('email name createdAt isActive preferences emailCount lastEmailSent')
+      .sort({ createdAt: -1 });
+
+    // Create CSV data
+    const csvHeader = 'Email,Name,Status,Subscribed Date,Email Count,Last Email Sent,Preferences\n';
     const csvData = subscribers.map(sub => 
-      `"${sub.email}","${sub.name || ''}","${sub.createdAt.toISOString()}"`
+      `"${sub.email}","${sub.name || ''}","${sub.isActive ? 'Active' : 'Inactive'}","${sub.createdAt.toISOString()}","${sub.emailCount || 0}","${sub.lastEmailSent ? sub.lastEmailSent.toISOString() : 'Never'}","${JSON.stringify(sub.preferences || {})}"`
     ).join('\n');
 
+    // Set headers for CSV download
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename=newsletter-subscribers.csv');
+    res.setHeader('Content-Disposition', `attachment; filename=newsletter-subscribers-${new Date().toISOString().split('T')[0]}.csv`);
+
+    // Send the CSV file
     res.send(csvHeader + csvData);
-  } else {
-    res.status(200).json({
-      success: true,
-      data: {
-        subscribers
-      }
+  } catch (error) {
+    console.error('❌ Error exporting newsletter subscribers:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error while exporting newsletter subscribers'
     });
   }
 });

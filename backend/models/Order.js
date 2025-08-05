@@ -123,7 +123,8 @@ orderSchema.methods.updateStatus = function(newStatus, updatedBy = null) {
     this.cancelledBy = updatedBy;
   }
   
-  return this.save();
+  // Don't call save() here - it will be called in the controller
+  return this;
 };
 
 // Method to generate WhatsApp message

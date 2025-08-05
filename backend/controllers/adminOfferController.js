@@ -1,86 +1,63 @@
 const Offer = require('../models/Offer');
+const Product = require('../models/Product');
 const { deleteImageFromS3 } = require('../utils/s3Upload');
 const asyncHandler = require('../utils/asyncHandler');
+const XLSX = require('xlsx');
 
-// Get all offers with pagination and filters (Admin)
+// @desc    Get all offers with pagination and filtering
+// @route   GET /api/admin/offers
+// @access  Private (Admin)
 const getOffers = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
-  const search = req.query.search || '';
-  const category = req.query.category || '';
-  const isActive = req.query.isActive !== undefined ? req.query.isActive === 'true' : undefined;
-  const sortBy = req.query.sortBy || 'createdAt';
-  const sortOrder = req.query.sortOrder || 'desc';
-
+  const { page = 1, limit = 10, search, status, type, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
   const skip = (page - 1) * limit;
-
-  // Build filter object
+  const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
   const filter = {};
-  
+
+  if (status && status !== 'all') {
+    filter.isActive = status === 'active';
+  }
+
+  if (type && type !== 'all') {
+    filter.type = type;
+  }
+
   if (search) {
     filter.$or = [
       { title: { $regex: search, $options: 'i' } },
-      { description: { $regex: search, $options: 'i' } }
+      { description: { $regex: search, $options: 'i' } },
+      { code: { $regex: search, $options: 'i' } }
     ];
   }
 
-  if (category) {
-    filter.category = category;
-  }
-
-  if (isActive !== undefined) {
-    filter.isActive = isActive;
-  }
-
-  // Build sort object
-  const sort = {};
-  sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
-
-  // Get offers with pagination
-  const offers = await Offer.find(filter)
-    .populate('productIds', 'name price images')
-    .sort(sort)
-    .skip(skip)
-    .limit(limit);
-
-  // Get total count for pagination
-  const total = await Offer.countDocuments(filter);
-
-  // Get categories for filter dropdown (hardcoded)
-  const categories = [
-    { name: 'Foodstuffs', _id: 'foodstuffs' },
-    { name: 'Household items', _id: 'household-items' },
-    { name: 'Beverages', _id: 'beverages' },
-    { name: 'Electronics', _id: 'electronics' },
-    { name: 'Construction materials', _id: 'construction-materials' },
-    { name: 'Plastics', _id: 'plastics' },
-    { name: 'Cosmetics', _id: 'cosmetics' },
-    { name: 'Powder detergent', _id: 'powder-detergent' },
-    { name: 'Liquid detergent', _id: 'liquid-detergent' },
-    { name: 'Juices', _id: 'juices' },
-    { name: 'Dental care', _id: 'dental-care' },
-    { name: 'Beef', _id: 'beef' }
-  ];
+  const [offers, total] = await Promise.all([
+    Offer.find(filter)
+      .populate('applicableProducts', 'name price')
+      .sort(sort)
+      .skip(skip)
+      .limit(parseInt(limit)),
+    Offer.countDocuments(filter)
+  ]);
 
   res.status(200).json({
     success: true,
     data: {
       offers,
       pagination: {
-        page,
-        limit,
+        page: parseInt(page),
+        limit: parseInt(limit),
         total,
         pages: Math.ceil(total / limit)
-      },
-      categories
+      }
     }
   });
 });
 
-// Get single offer (Admin)
+// @desc    Get single offer by ID
+// @route   GET /api/admin/offers/:id
+// @access  Private (Admin)
 const getOffer = asyncHandler(async (req, res) => {
   const offer = await Offer.findById(req.params.id)
-    .populate('productIds', 'name price images');
+    .populate('applicableProducts', 'name price images category');
 
   if (!offer) {
     return res.status(404).json({
@@ -91,183 +68,140 @@ const getOffer = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    data: {
-      offer
-    }
+    data: offer
   });
 });
 
-// Create new offer (Admin)
+// @desc    Create new offer
+// @route   POST /api/admin/offers
+// @access  Private (Admin)
 const createOffer = asyncHandler(async (req, res) => {
-  console.log('🔍 DEBUG: createOffer called');
-  console.log('📋 Request body:', req.body);
-  console.log('📋 Request files:', req.files);
-  console.log('📋 Request headers:', req.headers);
-
   const {
     title,
     description,
-    discount,
-    category,
-    productIds,
-    validFrom,
-    validUntil,
-    isActive,
-    maxUses
+    code,
+    type,
+    discountValue,
+    discountType,
+    minimumOrderAmount,
+    maximumDiscountAmount,
+    startDate,
+    endDate,
+    usageLimit,
+    isActive
   } = req.body;
 
-  console.log('📋 Extracted data:');
-  console.log('  - title:', title);
-  console.log('  - description:', description);
-  console.log('  - discount:', discount);
-  console.log('  - category:', category);
-  console.log('  - productIds:', productIds);
-  console.log('  - validFrom:', validFrom);
-  console.log('  - validUntil:', validUntil);
-  console.log('  - isActive:', isActive);
-  console.log('  - maxUses:', maxUses);
-  console.log('  - req.admin:', req.admin);
-  console.log('  - req.admin.id:', req.admin?.id);
+  // Handle applicableProducts array from form data
+  let applicableProducts = [];
+  if (req.body['applicableProducts[]']) {
+    // If it's an array
+    if (Array.isArray(req.body['applicableProducts[]'])) {
+      applicableProducts = req.body['applicableProducts[]'];
+    } else {
+      // If it's a single value
+      applicableProducts = [req.body['applicableProducts[]']];
+    }
+  }
 
   // Validate required fields
-  if (!title || !description || !discount || !category || !validUntil) {
-    console.log('❌ Validation failed:');
-    console.log('  - title exists:', !!title);
-    console.log('  - description exists:', !!description);
-    console.log('  - discount exists:', !!discount);
-    console.log('  - category exists:', !!category);
-    console.log('  - validUntil exists:', !!validUntil);
-    
+  if (!title || !code || !type || !discountValue || !discountType) {
     return res.status(400).json({
       success: false,
-      message: 'Title, description, discount, category, and valid until date are required'
+      message: 'Please provide all required fields'
     });
   }
 
-  console.log('✅ Validation passed');
-
-  // Check if category exists (using hardcoded categories)
-  console.log('🔍 Checking if category exists:', category);
-  
-  // Hardcoded categories that are allowed
-  const allowedCategories = [
-    'foodstuffs', 'household-items', 'beverages', 'electronics', 
-    'construction-materials', 'plastics', 'cosmetics', 'powder-detergent', 
-    'liquid-detergent', 'juices', 'dental-care', 'beef'
-  ];
-  
-  if (!allowedCategories.includes(category)) {
-    console.log('❌ Category not found in allowed list:', category);
+  // Check if offer code already exists
+  const existingOffer = await Offer.findOne({ code: code.toUpperCase() });
+  if (existingOffer) {
     return res.status(400).json({
       success: false,
-      message: 'Invalid category. Please select a valid category from the list.'
+      message: 'Offer code already exists'
     });
   }
 
-  console.log('✅ Category validation passed');
-
-  // Process image from uploaded file
-  let imageUrl = '';
-  if (req.file) {
-    console.log('📋 Processing uploaded file');
-    imageUrl = req.file.location;
-    console.log('📋 Image URL:', imageUrl);
-    
-    // Validate that it's an S3 URL
-    if (!imageUrl.includes('cabindaretailshop.s3.amazonaws.com')) {
-      console.log('❌ Invalid image URL - not from S3 bucket');
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid image URL. Only S3 bucket images are allowed.'
-      });
-    }
-  } else {
-    console.log('📋 No file uploaded - image will be null');
-    // Don't set any placeholder - let the field be null/empty
-    imageUrl = '';
+  // Validate discount type and value
+  if (discountType === 'percentage' && (discountValue < 1 || discountValue > 100)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Percentage discount must be between 1 and 100'
+    });
   }
 
-  // Parse productIds if it's a string
-  let parsedProductIds = [];
-  if (productIds) {
-    console.log('📋 Original productIds:', productIds);
-    if (typeof productIds === 'string') {
-      try {
-        // First try to parse as JSON
-        const jsonParsed = JSON.parse(productIds);
-        if (Array.isArray(jsonParsed)) {
-          parsedProductIds = jsonParsed;
-          console.log('📋 JSON parsed productIds:', parsedProductIds);
-        } else {
-          console.log('📋 productIds is not an array, treating as single ID');
-          parsedProductIds = [jsonParsed];
-        }
-      } catch (error) {
-        console.log('❌ Error parsing productIds as JSON:', error.message);
-        // If JSON parsing fails, try string extraction
-        const match = productIds.match(/"([^"]+)"/);
-        if (match) {
-          parsedProductIds = [match[1]];
-          console.log('📋 Extracted productId from string:', parsedProductIds);
-        } else {
-          // If no quotes found, treat as single ID
-          const cleanId = productIds.replace(/[\[\]"'\s]/g, '');
-          if (cleanId) {
-            parsedProductIds = [cleanId];
-            console.log('📋 Cleaned single productId:', parsedProductIds);
-          }
-        }
-      }
-    } else if (Array.isArray(productIds)) {
-      parsedProductIds = productIds;
-    }
-    console.log('📋 Final parsed productIds:', parsedProductIds);
+  if (discountType === 'fixed' && discountValue <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Fixed discount amount must be greater than 0'
+    });
   }
 
+  // Validate dates
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  
+  if (start >= end) {
+    return res.status(400).json({
+      success: false,
+      message: 'End date must be after start date'
+    });
+  }
+
+  // Prepare offer data
   const offerData = {
     title,
     description,
-    discount: parseFloat(discount),
-    category,
-    productIds: parsedProductIds,
-    validFrom: validFrom ? new Date(validFrom) : new Date(),
-    validUntil: new Date(validUntil),
-    isActive: isActive === 'true' || isActive === true,
-    image: imageUrl,
-    maxUses: maxUses ? parseInt(maxUses) : -1,
-    createdBy: req.admin?.id || '688a6b647ff31ccbe6ff2f22' // Fallback to admin ID
+    code: code.toUpperCase(),
+    type,
+    discountValue: parseFloat(discountValue),
+    discountType,
+    minimumOrderAmount: parseFloat(minimumOrderAmount) || 0,
+    maximumDiscountAmount: parseFloat(maximumDiscountAmount) || null,
+    startDate: start,
+    endDate: end,
+    usageLimit: parseInt(usageLimit) || null,
+    applicableProducts: applicableProducts,
+    isActive: isActive !== undefined ? isActive : true,
+    createdBy: req.admin._id // Set the admin user who created the offer
   };
 
-  console.log('📋 Final offer data:', offerData);
-
-  try {
-    const offer = await Offer.create(offerData);
-    console.log('✅ Offer created successfully:', offer._id);
-    console.log('📋 Saved offer image:', offer.image);
-
-    const populatedOffer = await Offer.findById(offer._id)
-      .populate('productIds', 'name price images');
-    console.log('✅ Offer populated successfully');
-    console.log('📋 Populated offer image:', populatedOffer.image);
-
-    res.status(201).json({
-      success: true,
-      message: 'Offer created successfully',
-      data: {
-        offer: populatedOffer
-      }
-    });
-  } catch (error) {
-    console.error('❌ Error creating offer:', error);
-    console.error('❌ Error details:', error.message);
-    throw error;
+  // Handle image upload if present
+  if (req.file) {
+    offerData.image = req.file.location; // S3 URL
   }
+
+  const offer = await Offer.create(offerData);
+
+  const populatedOffer = await Offer.findById(offer._id)
+    .populate('applicableProducts', 'name price images category');
+
+  res.status(201).json({
+    success: true,
+    message: 'Offer created successfully',
+    data: populatedOffer
+  });
 });
 
-// Update offer (Admin)
+// @desc    Update offer
+// @route   PUT /api/admin/offers/:id
+// @access  Private (Admin)
 const updateOffer = asyncHandler(async (req, res) => {
-  const offer = await Offer.findById(req.params.id);
+  const {
+    title,
+    description,
+    code,
+    type,
+    discountValue,
+    discountType,
+    minimumOrderAmount,
+    maximumDiscountAmount,
+    startDate,
+    endDate,
+    usageLimit,
+    applicableProducts,
+    isActive
+  } = req.body;
 
+  const offer = await Offer.findById(req.params.id);
   if (!offer) {
     return res.status(404).json({
       success: false,
@@ -275,102 +209,87 @@ const updateOffer = asyncHandler(async (req, res) => {
     });
   }
 
-  const {
-    title,
-    description,
-    discount,
-    category,
-    productIds,
-    validFrom,
-    validUntil,
-    isActive,
-    maxUses
-  } = req.body;
-
-  // Check if category exists if it's being updated
-  if (category) {
-    // Hardcoded categories that are allowed
-    const allowedCategories = [
-      'foodstuffs', 'household-items', 'beverages', 'electronics', 
-      'construction-materials', 'plastics', 'cosmetics', 'powder-detergent', 
-      'liquid-detergent', 'juices', 'dental-care', 'beef'
-    ];
-    
-    if (!allowedCategories.includes(category)) {
+  // Check if code is being changed and if it already exists
+  if (code && code !== offer.code) {
+    const existingOffer = await Offer.findOne({ 
+      code: code.toUpperCase(),
+      _id: { $ne: req.params.id }
+    });
+    if (existingOffer) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid category. Please select a valid category from the list.'
+        message: 'Offer code already exists'
       });
     }
   }
 
-  // Handle image updates
-  let imageUrl = offer.image;
-
-  // Add new uploaded image
-  if (req.file) {
-    imageUrl = req.file.location;
+  // Validate discount type and value
+  if (discountType === 'percentage' && (discountValue < 1 || discountValue > 100)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Percentage discount must be between 1 and 100'
+    });
   }
 
-  // Parse productIds if it's a string
-  let parsedProductIds = offer.productIds;
-  if (productIds) {
-    if (typeof productIds === 'string') {
-      try {
-        parsedProductIds = JSON.parse(productIds);
-      } catch (error) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid product IDs format'
-        });
-      }
-    } else if (Array.isArray(productIds)) {
-      parsedProductIds = productIds;
+  if (discountType === 'fixed' && discountValue <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Fixed discount amount must be greater than 0'
+    });
+  }
+
+  // Validate dates if provided
+  if (startDate && endDate) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (start >= end) {
+      return res.status(400).json({
+        success: false,
+        message: 'End date must be after start date'
+      });
     }
   }
 
-  // Update offer
+  const updateData = {};
+  if (title !== undefined) updateData.title = title;
+  if (description !== undefined) updateData.description = description;
+  if (code !== undefined) updateData.code = code.toUpperCase();
+  if (type !== undefined) updateData.type = type;
+  if (discountValue !== undefined) updateData.discountValue = discountValue;
+  if (discountType !== undefined) updateData.discountType = discountType;
+  if (minimumOrderAmount !== undefined) updateData.minimumOrderAmount = minimumOrderAmount;
+  if (maximumDiscountAmount !== undefined) updateData.maximumDiscountAmount = maximumDiscountAmount;
+  if (startDate !== undefined) updateData.startDate = new Date(startDate);
+  if (endDate !== undefined) updateData.endDate = new Date(endDate);
+  if (usageLimit !== undefined) updateData.usageLimit = usageLimit;
+  if (applicableProducts !== undefined) updateData.applicableProducts = applicableProducts;
+  if (isActive !== undefined) updateData.isActive = isActive;
+
   const updatedOffer = await Offer.findByIdAndUpdate(
     req.params.id,
-    {
-      title: title || offer.title,
-      description: description || offer.description,
-      discount: discount ? parseFloat(discount) : offer.discount,
-      category: category || offer.category,
-      productIds: parsedProductIds,
-      validFrom: validFrom ? new Date(validFrom) : offer.validFrom,
-      validUntil: validUntil ? new Date(validUntil) : offer.validUntil,
-      image: imageUrl,
-      isActive: isActive !== undefined ? (isActive === 'true' || isActive === true) : offer.isActive,
-      maxUses: maxUses ? parseInt(maxUses) : offer.maxUses,
-      updatedBy: req.admin.id
-    },
+    updateData,
     { new: true, runValidators: true }
-  ).populate('productIds', 'name price images');
+  ).populate('applicableProducts', 'name price images category');
 
   res.status(200).json({
     success: true,
     message: 'Offer updated successfully',
-    data: {
-      offer: updatedOffer
-    }
+    data: updatedOffer
   });
 });
 
-// Delete offer (Admin)
+// @desc    Delete offer
+// @route   DELETE /api/admin/offers/:id
+// @access  Private (Admin)
 const deleteOffer = asyncHandler(async (req, res) => {
   const offer = await Offer.findById(req.params.id);
-
+  
   if (!offer) {
     return res.status(404).json({
       success: false,
       message: 'Offer not found'
     });
-  }
-
-  // Delete image from S3
-  if (offer.image) {
-    await deleteImageFromS3(offer.image);
   }
 
   await Offer.findByIdAndDelete(req.params.id);
@@ -381,10 +300,143 @@ const deleteOffer = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Toggle offer status
+// @route   PATCH /api/admin/offers/:id/toggle
+// @access  Private (Admin)
+const toggleOfferStatus = asyncHandler(async (req, res) => {
+  const offer = await Offer.findById(req.params.id);
+  
+  if (!offer) {
+    return res.status(404).json({
+      success: false,
+      message: 'Offer not found'
+    });
+  }
+
+  offer.isActive = !offer.isActive;
+  await offer.save();
+
+  const updatedOffer = await Offer.findById(req.params.id)
+    .populate('applicableProducts', 'name price images category');
+
+  res.status(200).json({
+    success: true,
+    message: `Offer ${offer.isActive ? 'activated' : 'deactivated'} successfully`,
+    data: updatedOffer
+  });
+});
+
+// @desc    Get offer statistics
+// @route   GET /api/admin/offers/stats
+// @access  Private (Admin)
+const getOfferStats = asyncHandler(async (req, res) => {
+  const [totalOffers, activeOffers, inactiveOffers, expiringOffers] = await Promise.all([
+    Offer.countDocuments(),
+    Offer.countDocuments({ isActive: true }),
+    Offer.countDocuments({ isActive: false }),
+    Offer.countDocuments({
+      isActive: true,
+      endDate: {
+        $gte: new Date(),
+        $lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Next 7 days
+      }
+    })
+  ]);
+
+  const stats = {
+    totalOffers,
+    activeOffers,
+    inactiveOffers,
+    expiringOffers,
+    activePercentage: totalOffers > 0 ? (activeOffers / totalOffers) * 100 : 0
+  };
+
+  res.status(200).json({
+    success: true,
+    data: stats
+  });
+});
+
+// @desc    Export offers
+// @route   GET /api/admin/offers/export
+// @access  Private (Admin)
+const exportOffers = asyncHandler(async (req, res) => {
+  const { status, type } = req.query;
+  
+  const filter = {};
+  if (status && status !== 'all') {
+    filter.isActive = status === 'active';
+  }
+  if (type && type !== 'all') {
+    filter.type = type;
+  }
+
+  const offers = await Offer.find(filter)
+    .populate('applicableProducts', 'name price')
+    .sort({ createdAt: -1 });
+
+  // Create Excel data
+  const excelData = offers.map(offer => ({
+    title: offer.title || 'N/A',
+    description: offer.description || 'N/A',
+    code: offer.code || 'N/A',
+    type: offer.type || 'N/A',
+    discountType: offer.discountType || 'N/A',
+    discountValue: offer.discountValue || 0,
+    isActive: offer.isActive ? 'Yes' : 'No',
+    startDate: offer.startDate ? new Date(offer.startDate).toISOString() : 'N/A',
+    endDate: offer.endDate ? new Date(offer.endDate).toISOString() : 'N/A',
+    applicableProducts: offer.applicableProducts?.map(p => p.name).join(', ') || 'All Products',
+    minimumOrderAmount: offer.minimumOrderAmount || 'N/A',
+    maximumDiscount: offer.maximumDiscountAmount || 'N/A',
+    usageLimit: offer.usageLimit || 'Unlimited',
+    createdAt: offer.createdAt ? new Date(offer.createdAt).toISOString() : 'N/A'
+  }));
+
+  // Create workbook and worksheet
+  const workbook = XLSX.utils.book_new();
+  const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+  // Set column widths
+  const columnWidths = [
+    { wch: 25 }, // title
+    { wch: 40 }, // description
+    { wch: 15 }, // code
+    { wch: 15 }, // type
+    { wch: 15 }, // discountType
+    { wch: 12 }, // discountValue
+    { wch: 10 }, // isActive
+    { wch: 20 }, // startDate
+    { wch: 20 }, // endDate
+    { wch: 30 }, // applicableProducts
+    { wch: 15 }, // minimumOrderAmount
+    { wch: 15 }, // maximumDiscount
+    { wch: 12 }, // usageLimit
+    { wch: 20 }  // createdAt
+  ];
+  worksheet['!cols'] = columnWidths;
+
+  // Add worksheet to workbook
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Offers');
+
+  // Generate Excel file buffer
+  const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+  // Set headers for Excel download
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename=offers-export-${new Date().toISOString().split('T')[0]}.xlsx`);
+
+  // Send the Excel file
+  res.send(excelBuffer);
+});
+
 module.exports = {
   getOffers,
   getOffer,
   createOffer,
   updateOffer,
-  deleteOffer
+  deleteOffer,
+  toggleOfferStatus,
+  getOfferStats,
+  exportOffers
 }; 

@@ -11,15 +11,65 @@ const offerSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  discount: {
+  // New fields for admin controller
+  code: {
+    type: String,
+    required: true,
+    unique: true,
+    uppercase: true,
+    trim: true
+  },
+  type: {
+    type: String,
+    required: true,
+    enum: ['discount', 'free_shipping', 'buy_one_get_one', 'cashback'],
+    default: 'discount'
+  },
+  discountValue: {
     type: Number,
     required: true,
+    min: 0
+  },
+  discountType: {
+    type: String,
+    required: true,
+    enum: ['percentage', 'fixed'],
+    default: 'percentage'
+  },
+  minimumOrderAmount: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  maximumDiscountAmount: {
+    type: Number,
+    min: 0
+  },
+  startDate: {
+    type: Date,
+    required: true,
+    default: Date.now
+  },
+  endDate: {
+    type: Date,
+    required: true
+  },
+  usageLimit: {
+    type: Number,
+    default: null // null means unlimited
+  },
+  applicableProducts: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product'
+  }],
+  // Legacy fields for backward compatibility
+  discount: {
+    type: Number,
     min: 0,
     max: 100
   },
   category: {
     type: String,
-    required: true,
     enum: {
       values: [
         'foodstuffs', 'household-items', 'beverages', 'electronics', 
@@ -35,12 +85,10 @@ const offerSchema = new mongoose.Schema({
   }],
   validFrom: {
     type: Date,
-    required: true,
     default: Date.now
   },
   validUntil: {
-    type: Date,
-    required: true
+    type: Date
   },
   isActive: {
     type: Boolean,
@@ -71,7 +119,7 @@ const offerSchema = new mongoose.Schema({
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Admin',
-    required: true
+    required: false
   },
   updatedBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -82,15 +130,16 @@ const offerSchema = new mongoose.Schema({
 });
 
 // Index for active offers
-offerSchema.index({ isActive: 1, validUntil: 1 });
+offerSchema.index({ isActive: 1, endDate: 1 });
+offerSchema.index({ code: 1 });
 
 // Method to check if offer is still valid
 offerSchema.methods.isValid = function() {
   const now = new Date();
   return this.isActive && 
-         now >= this.validFrom && 
-         now <= this.validUntil &&
-         (this.maxUses === -1 || this.usedCount < this.maxUses);
+         now >= this.startDate && 
+         now <= this.endDate &&
+         (this.usageLimit === null || this.usedCount < this.usageLimit);
 };
 
 // Method to claim offer
@@ -99,25 +148,67 @@ offerSchema.methods.claim = function(userId) {
     throw new Error('Offer is not valid');
   }
   
-  // Check if user already claimed this offer
-  const alreadyClaimed = this.claimedBy.some(claim => 
-    claim.user.toString() === userId.toString()
-  );
-  
-  if (alreadyClaimed) {
-    throw new Error('User has already claimed this offer');
+  if (this.usageLimit !== null && this.usedCount >= this.usageLimit) {
+    throw new Error('Offer usage limit reached');
   }
   
-  // Add user to claimedBy array
-  this.claimedBy.push({
-    user: userId,
-    claimedAt: new Date()
-  });
+  // Check if user already claimed this offer
+  const alreadyClaimed = this.claimedBy.some(claim => claim.user.toString() === userId.toString());
+  if (alreadyClaimed) {
+    throw new Error('User already claimed this offer');
+  }
   
-  // Increment used count
   this.usedCount += 1;
-  
+  this.claimedBy.push({ user: userId });
   return this.save();
 };
+
+// Pre-save middleware to handle legacy fields
+offerSchema.pre('save', function(next) {
+  // If new fields are not set, try to populate from legacy fields
+  if (!this.code && this.title) {
+    this.code = this.title.replace(/\s+/g, '_').toUpperCase();
+  }
+  
+  if (!this.discountValue && this.discount) {
+    this.discountValue = this.discount;
+    this.discountType = 'percentage';
+  }
+  
+  if (!this.startDate && this.validFrom) {
+    this.startDate = this.validFrom;
+  }
+  
+  if (!this.endDate && this.validUntil) {
+    this.endDate = this.validUntil;
+  }
+  
+  if (!this.applicableProducts && this.productIds) {
+    this.applicableProducts = this.productIds;
+  }
+  
+  if (!this.usageLimit && this.maxUses !== -1) {
+    this.usageLimit = this.maxUses;
+  }
+
+  // Ensure numeric fields are properly converted
+  if (this.discountValue && typeof this.discountValue === 'string') {
+    this.discountValue = parseFloat(this.discountValue);
+  }
+  
+  if (this.minimumOrderAmount && typeof this.minimumOrderAmount === 'string') {
+    this.minimumOrderAmount = parseFloat(this.minimumOrderAmount);
+  }
+  
+  if (this.maximumDiscountAmount && typeof this.maximumDiscountAmount === 'string') {
+    this.maximumDiscountAmount = parseFloat(this.maximumDiscountAmount);
+  }
+  
+  if (this.usageLimit && typeof this.usageLimit === 'string') {
+    this.usageLimit = parseInt(this.usageLimit);
+  }
+  
+  next();
+});
 
 module.exports = mongoose.model('Offer', offerSchema); 

@@ -27,6 +27,13 @@ import {
 } from 'lucide-react';
 import ProductManagement from './admin/ProductManagement';
 import OrderManagement from './admin/OrderManagement';
+import CustomerManagement from './admin/CustomerManagement';
+import Analytics from './admin/Analytics';
+import OfferManagement from './admin/OfferManagement';
+import AnnouncementManagement from './admin/AnnouncementManagement';
+import NewsletterManagement from './admin/NewsletterManagement';
+import ReportsManagement from './admin/ReportsManagement';
+import SettingsManagement from './admin/SettingsManagement';
 
 interface AdminData {
   id: string;
@@ -377,55 +384,13 @@ const AdminDashboard = () => {
           {activeSection === 'overview' && renderOverview()}
           {activeSection === 'products' && <ProductManagement />}
           {activeSection === 'orders' && <OrderManagement />}
-          {activeSection === 'customers' && (
-            <div className="text-center py-12">
-              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Customer Management</h3>
-              <p className="text-gray-600">Customer management interface coming soon...</p>
-            </div>
-          )}
-          {activeSection === 'analytics' && (
-            <div className="text-center py-12">
-              <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Analytics Dashboard</h3>
-              <p className="text-gray-600">Analytics interface coming soon...</p>
-            </div>
-          )}
-          {activeSection === 'offers' && (
-            <div className="text-center py-12">
-              <Tag className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Offers Management</h3>
-              <p className="text-gray-600">Offers management interface coming soon...</p>
-            </div>
-          )}
-          {activeSection === 'announcements' && (
-            <div className="text-center py-12">
-              <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Announcements</h3>
-              <p className="text-gray-600">Announcements management interface coming soon...</p>
-            </div>
-          )}
-          {activeSection === 'newsletter' && (
-            <div className="text-center py-12">
-              <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Newsletter Management</h3>
-              <p className="text-gray-600">Newsletter management interface coming soon...</p>
-            </div>
-          )}
-          {activeSection === 'reports' && (
-            <div className="text-center py-12">
-              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Reports</h3>
-              <p className="text-gray-600">Reports interface coming soon...</p>
-            </div>
-          )}
-          {activeSection === 'settings' && (
-            <div className="text-center py-12">
-              <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Settings</h3>
-              <p className="text-gray-600">Settings interface coming soon...</p>
-            </div>
-          )}
+          {activeSection === 'customers' && <CustomerManagement />}
+          {activeSection === 'analytics' && <Analytics />}
+          {activeSection === 'offers' && <OfferManagement />}
+          {activeSection === 'announcements' && <AnnouncementManagement />}
+          {activeSection === 'newsletter' && <NewsletterManagement />}
+          {activeSection === 'reports' && <ReportsManagement />}
+          {activeSection === 'settings' && <SettingsManagement />}
         </main>
       </div>
     </div>

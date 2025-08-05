@@ -1,6 +1,7 @@
 const Announcement = require('../models/Announcement');
 const { deleteImageFromS3, deleteMultipleImagesFromS3 } = require('../utils/s3Upload');
 const asyncHandler = require('../utils/asyncHandler');
+const XLSX = require('xlsx');
 
 // Get all announcements with pagination and filters
 const getAnnouncements = asyncHandler(async (req, res) => {
@@ -129,23 +130,40 @@ const createAnnouncement = asyncHandler(async (req, res) => {
 
   console.log('✅ Validation passed');
 
-  // Process images from uploaded files
+  // Process image from uploaded file
   const processedImages = [];
   if (req.files && req.files.length > 0) {
-    console.log('📋 Processing uploaded files:', req.files.length);
-    processedImages.push(...req.files.map(file => ({
-      url: file.location,
-      alt: file.originalname,
+    console.log('📋 Processing uploaded file:', req.files.length);
+    processedImages.push({
+      url: req.files[0].location,
+      alt: req.files[0].originalname,
       caption: ''
-    })));
-    console.log('📋 Processed images:', processedImages);
+    });
+    console.log('📋 Processed image:', processedImages);
   } else {
-    console.log('📋 No files uploaded');
+    console.log('📋 No file uploaded');
   }
 
-  // Add any additional images from request body
-  if (images && Array.isArray(images)) {
-    processedImages.push(...images);
+  // Add any additional image from request body
+  if (images && Array.isArray(images) && images.length > 0) {
+    processedImages.push(images[0]);
+  }
+
+  // Validate that exactly one image is provided
+  if (processedImages.length === 0) {
+    console.log('❌ Image validation failed: No image provided');
+    return res.status(400).json({
+      success: false,
+      message: 'One image is required for announcements'
+    });
+  }
+
+  if (processedImages.length > 1) {
+    console.log('❌ Image validation failed: Too many images provided');
+    return res.status(400).json({
+      success: false,
+      message: 'Only one image is allowed per announcement'
+    });
   }
 
   const announcementData = {
@@ -211,36 +229,46 @@ const updateAnnouncement = asyncHandler(async (req, res) => {
   } = req.body;
 
   // Handle image updates
-  let updatedImages = announcement.images || [];
+  let updatedImages = [];
 
-  // Remove specified images
-  if (removeImages && Array.isArray(removeImages)) {
-    const imagesToRemove = updatedImages.filter(img => 
-      removeImages.includes(img.url)
-    );
-    
-    // Delete from S3
-    await deleteMultipleImagesFromS3(imagesToRemove.map(img => img.url));
-    
-    // Remove from array
-    updatedImages = updatedImages.filter(img => 
-      !removeImages.includes(img.url)
-    );
-  }
-
-  // Add new uploaded images
+  // Add new uploaded image (replaces existing)
   if (req.files && req.files.length > 0) {
-    const newImages = req.files.map(file => ({
-      url: file.location,
-      alt: file.originalname,
+    const newImage = {
+      url: req.files[0].location,
+      alt: req.files[0].originalname,
       caption: ''
-    }));
-    updatedImages.push(...newImages);
+    };
+    updatedImages.push(newImage);
   }
 
-  // Add any additional images from request body
-  if (images && Array.isArray(images)) {
-    updatedImages.push(...images);
+  // Add existing image if no new image is uploaded
+  if (req.body.existingImage && updatedImages.length === 0) {
+    try {
+      const existingImage = JSON.parse(req.body.existingImage);
+      updatedImages.push(existingImage);
+    } catch (error) {
+      console.error('Error parsing existing image:', error);
+    }
+  }
+
+  // Add any additional image from request body
+  if (images && Array.isArray(images) && images.length > 0 && updatedImages.length === 0) {
+    updatedImages.push(images[0]);
+  }
+
+  // Validate that exactly one image is provided
+  if (updatedImages.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'One image is required for announcements'
+    });
+  }
+
+  if (updatedImages.length > 1) {
+    return res.status(400).json({
+      success: false,
+      message: 'Only one image is allowed per announcement'
+    });
   }
 
   // Update announcement
@@ -380,6 +408,122 @@ const getActiveAnnouncements = asyncHandler(async (req, res) => {
   });
 });
 
+// Get announcement statistics
+const getAnnouncementStats = asyncHandler(async (req, res) => {
+  const totalAnnouncements = await Announcement.countDocuments();
+  const activeAnnouncements = await Announcement.countDocuments({ isActive: true });
+  const inactiveAnnouncements = await Announcement.countDocuments({ isActive: false });
+  
+  // Count expiring announcements (within 7 days)
+  const sevenDaysFromNow = new Date();
+  sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+  const expiringAnnouncements = await Announcement.countDocuments({
+    isActive: true,
+    endDate: { $lte: sevenDaysFromNow, $gte: new Date() }
+  });
+
+  // Get total views and clicks
+  const stats = await Announcement.aggregate([
+    {
+      $group: {
+        _id: null,
+        totalViews: { $sum: '$views' },
+        totalClicks: { $sum: '$clicks' },
+        averageViews: { $avg: '$views' },
+        averageClicks: { $avg: '$clicks' }
+      }
+    }
+  ]);
+
+  const result = stats[0] || { totalViews: 0, totalClicks: 0, averageViews: 0, averageClicks: 0 };
+
+  res.status(200).json({
+    success: true,
+    data: {
+      totalAnnouncements,
+      activeAnnouncements,
+      inactiveAnnouncements,
+      expiringAnnouncements,
+      totalViews: result.totalViews,
+      totalClicks: result.totalClicks,
+      averageViews: Math.round(result.averageViews),
+      averageClicks: Math.round(result.averageClicks)
+    }
+  });
+});
+
+// Export announcements
+const exportAnnouncements = asyncHandler(async (req, res) => {
+  const { status, type, priority } = req.query;
+  
+  const filter = {};
+  if (status && status !== 'all') {
+    filter.isActive = status === 'active';
+  }
+  if (type && type !== 'all') {
+    filter.type = type;
+  }
+  if (priority && priority !== 'all') {
+    filter.priority = priority;
+  }
+
+  const announcements = await Announcement.find(filter)
+    .populate('createdBy', 'name email')
+    .sort({ createdAt: -1 });
+
+  // Create Excel data
+  const excelData = announcements.map(announcement => ({
+    title: announcement.title,
+    content: announcement.content,
+    type: announcement.type,
+    priority: announcement.priority,
+    isActive: announcement.isActive ? 'Yes' : 'No',
+    startDate: new Date(announcement.startDate).toISOString(),
+    endDate: new Date(announcement.endDate).toISOString(),
+    targetAudience: announcement.targetAudience || 'All',
+    displayLocation: announcement.displayLocation || 'All',
+    views: announcement.views || 0,
+    clicks: announcement.clicks || 0,
+    createdBy: announcement.createdBy?.name || 'N/A',
+    createdAt: new Date(announcement.createdAt).toISOString()
+  }));
+
+  // Create workbook and worksheet
+  const workbook = XLSX.utils.book_new();
+  const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+  // Set column widths
+  const columnWidths = [
+    { wch: 25 }, // title
+    { wch: 40 }, // content
+    { wch: 15 }, // type
+    { wch: 12 }, // priority
+    { wch: 10 }, // isActive
+    { wch: 20 }, // startDate
+    { wch: 20 }, // endDate
+    { wch: 15 }, // targetAudience
+    { wch: 15 }, // displayLocation
+    { wch: 8 },  // views
+    { wch: 8 },  // clicks
+    { wch: 20 }, // createdBy
+    { wch: 20 }  // createdAt
+  ];
+  worksheet['!cols'] = columnWidths;
+
+  // Add worksheet to workbook
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Announcements');
+
+  // Generate Excel file buffer
+  const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+  // Set headers for Excel download
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename=announcements-export-${new Date().toISOString().split('T')[0]}.xlsx`);
+
+  // Send the Excel file
+  res.send(excelBuffer);
+});
+
 module.exports = {
   getAnnouncements,
   getAnnouncement,
@@ -388,5 +532,7 @@ module.exports = {
   deleteAnnouncement,
   bulkDeleteAnnouncements,
   toggleAnnouncementStatus,
-  getActiveAnnouncements
+  getActiveAnnouncements,
+  getAnnouncementStats,
+  exportAnnouncements
 }; 

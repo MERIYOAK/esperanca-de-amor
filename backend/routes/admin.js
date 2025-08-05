@@ -24,7 +24,9 @@ const {
   deleteAnnouncement,
   bulkDeleteAnnouncements,
   toggleAnnouncementStatus,
-  getActiveAnnouncements
+  getActiveAnnouncements,
+  getAnnouncementStats,
+  exportAnnouncements
 } = require('../controllers/adminAnnouncementController');
 
 const {
@@ -44,8 +46,11 @@ const {
   getOffer,
   createOffer,
   updateOffer,
-  deleteOffer
-} = require('../controllers/offerController');
+  deleteOffer,
+  toggleOfferStatus,
+  getOfferStats,
+  exportOffers
+} = require('../controllers/adminOfferController');
 
 // Import PromoBanner controller
 const {
@@ -61,7 +66,8 @@ const {
 const {
   getAnalytics,
   getSalesTrend,
-  exportAnalytics
+  exportAnalytics,
+  exportSalesTrend
 } = require('../controllers/adminAnalyticsController');
 
 // Import Order controller
@@ -73,11 +79,49 @@ const {
   exportOrders
 } = require('../controllers/adminOrderController');
 
+// Import Customer controller
+const {
+  getCustomers,
+  getCustomer,
+  updateCustomerStatus,
+  deleteCustomer,
+  getCustomerStats,
+  exportCustomers
+} = require('../controllers/adminCustomerController');
+
+// Import Settings controller
+const {
+  getSettings,
+  updateProfileSettings,
+  updateSecuritySettings,
+  updateNotificationSettings,
+  updateSystemSettings,
+  updateEmailSettings,
+  testEmailConfiguration,
+  testSettingsEndpoint,
+  getSystemInfo,
+  backupDatabase,
+  clearCache
+} = require('../controllers/adminSettingsController');
+
 // Public announcement route (for frontend) - NO AUTH REQUIRED
 router.get('/announcements/public/active', getActiveAnnouncements);
 
 // Apply admin protection to all routes EXCEPT the public announcement route
 router.use(protectAdmin);
+
+// Test endpoint to verify admin authentication
+router.get('/test-auth', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Admin authentication working',
+    admin: {
+      id: req.admin._id,
+      email: req.admin.email,
+      role: req.admin.role
+    }
+  });
+});
 
 // Product Management Routes
 router.get('/products', getProducts);
@@ -92,6 +136,8 @@ router.patch('/products/:id/stock', updateProductStock);
 
 // Announcement Management Routes
 router.get('/announcements', getAnnouncements);
+router.get('/announcements/stats', getAnnouncementStats);
+router.get('/announcements/export', exportAnnouncements);
 router.get('/announcements/:id', getAnnouncement);
 router.post('/announcements', uploadMultiple('announcements', 3), createAnnouncement);
 router.put('/announcements/:id', uploadMultiple('announcements', 3), updateAnnouncement);
@@ -101,20 +147,23 @@ router.patch('/announcements/:id/toggle', toggleAnnouncementStatus);
 
 // Offer Management Routes
 router.get('/offers', getOffers);
+router.get('/offers/export', exportOffers);
+router.get('/offers/stats', getOfferStats);
 router.get('/offers/:id', getOffer);
 router.post('/offers', uploadSingle('offers'), createOffer);
 router.put('/offers/:id', uploadSingle('offers'), updateOffer);
 router.delete('/offers/:id', deleteOffer);
+router.patch('/offers/:id/toggle', toggleOfferStatus);
 
 // Newsletter Management Routes
 router.get('/newsletter/subscribers', getNewsletterSubscribers);
+router.get('/newsletter/export', exportSubscribers);
+router.get('/newsletter/stats', getNewsletterStats);
 router.get('/newsletter/subscribers/:id', getNewsletterSubscriber);
 router.post('/newsletter/send', sendNewsletterUpdate);
-router.get('/newsletter/export', exportSubscribers);
 router.patch('/newsletter/subscribers/:id/status', updateSubscriberStatus);
 router.delete('/newsletter/subscribers/:id', deleteSubscriber);
 router.delete('/newsletter/subscribers/bulk', bulkDeleteSubscribers);
-router.get('/newsletter/stats', getNewsletterStats);
 
 // PromoBanner Management Routes
 router.get('/promo-banners', getPromoBanners);
@@ -127,13 +176,35 @@ router.patch('/promo-banners/:id/toggle', togglePromoBanner);
 // Analytics Routes
 router.get('/analytics', getAnalytics);
 router.get('/analytics/sales-trend', getSalesTrend);
+router.get('/analytics/sales-trend/export', exportSalesTrend);
 router.get('/analytics/export', exportAnalytics);
 
 // Order Management Routes
 router.get('/orders', getOrders);
+router.get('/orders/export', exportOrders);
+router.get('/orders/stats', getOrderStats);
 router.get('/orders/:id', getOrder);
 router.patch('/orders/:id/status', updateOrderStatus);
-router.get('/orders/stats', getOrderStats);
-router.get('/orders/export', exportOrders);
+
+// Customer Management Routes
+router.get('/customers', getCustomers);
+router.get('/customers/export', exportCustomers);
+router.get('/customers/stats', getCustomerStats);
+router.get('/customers/:id', getCustomer);
+router.patch('/customers/:id/status', updateCustomerStatus);
+router.delete('/customers/:id', deleteCustomer);
+
+// Settings Management Routes
+router.get('/settings', getSettings);
+router.put('/settings/profile', updateProfileSettings);
+router.put('/settings/security', updateSecuritySettings);
+router.put('/settings/notifications', updateNotificationSettings);
+router.put('/settings/system', updateSystemSettings);
+router.put('/settings/email', updateEmailSettings);
+router.post('/settings/email/test', testEmailConfiguration);
+router.get('/settings/test', testSettingsEndpoint);
+router.get('/settings/system-info', getSystemInfo);
+router.post('/settings/backup', backupDatabase);
+router.post('/settings/clear-cache', clearCache);
 
 module.exports = router; 

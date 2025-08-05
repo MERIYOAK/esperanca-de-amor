@@ -1,6 +1,7 @@
-const asyncHandler = require('../utils/asyncHandler');
 const Order = require('../models/Order');
 const User = require('../models/User');
+const asyncHandler = require('../utils/asyncHandler');
+const XLSX = require('xlsx');
 
 // @desc    Get all orders with pagination and filtering
 // @route   GET /api/admin/orders
@@ -79,17 +80,41 @@ const getOrder = asyncHandler(async (req, res) => {
 // @route   PATCH /api/admin/orders/:id/status
 // @access  Private (Admin)
 const updateOrderStatus = asyncHandler(async (req, res) => {
-  const { status, notes, cancellationReason } = req.body;
-
-  console.log('🔄 Status update request:', {
-    orderId: req.params.id,
-    currentStatus: req.body.status,
-    newStatus: status,
-    notes,
-    cancellationReason
+  console.log('🔐 Admin authentication check:', {
+    hasAdmin: !!req.admin,
+    adminId: req.admin?._id,
+    adminEmail: req.admin?.email
   });
 
-  const order = await Order.findById(req.params.id);
+  const { status, notes, cancellationReason } = req.body;
+  const orderId = req.params.id;
+
+  console.log('🔄 Status update request:', {
+    orderId,
+    body: req.body,
+    newStatus: status,
+    notes,
+    cancellationReason,
+    headers: req.headers
+  });
+
+  // Validate order ID format
+  if (!orderId || !require('mongoose').Types.ObjectId.isValid(orderId)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid order ID format'
+    });
+  }
+
+  // Validate that status is provided
+  if (!status) {
+    return res.status(400).json({
+      success: false,
+      message: 'Status is required'
+    });
+  }
+
+  const order = await Order.findById(orderId);
   if (!order) {
     return res.status(404).json({
       success: false,
@@ -105,7 +130,7 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   if (!validStatuses.includes(status)) {
     return res.status(400).json({
       success: false,
-      message: `Invalid status: ${status}. Valid statuses: ${validStatuses.join(', ')}`
+      message: `Invalid status: "${status}". Valid statuses are: ${validStatuses.join(', ')}`
     });
   }
 
@@ -119,37 +144,45 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   if (restrictedFrom.length > 0 && !restrictedFrom.includes(status)) {
     return res.status(400).json({
       success: false,
-      message: `Cannot change status from ${order.status} to ${status}. Allowed transitions: ${restrictedFrom.join(', ')}`
+      message: `Cannot change status from "${order.status}" to "${status}". Allowed transitions: ${restrictedFrom.join(', ')}`
     });
   }
 
   console.log('✅ Status transition allowed');
 
-  // Update order status
-  await order.updateStatus(status, req.admin._id);
+  try {
+    // Update order status
+    await order.updateStatus(status, req.admin._id);
 
-  // Update notes if provided
-  if (notes) {
-    order.notes = notes;
+    // Update notes if provided
+    if (notes) {
+      order.notes = notes;
+    }
+
+    // Update cancellation reason if cancelling
+    if (status === 'cancelled' && cancellationReason) {
+      order.cancellationReason = cancellationReason;
+    }
+
+    await order.save();
+
+    // Populate user for response
+    await order.populate('user', 'name email');
+
+    console.log('✅ Order status updated successfully');
+
+    res.status(200).json({
+      success: true,
+      message: `Order status updated to ${status}`,
+      data: order
+    });
+  } catch (error) {
+    console.error('❌ Error updating order status:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error while updating order status'
+    });
   }
-
-  // Update cancellation reason if cancelling
-  if (status === 'cancelled' && cancellationReason) {
-    order.cancellationReason = cancellationReason;
-  }
-
-  await order.save();
-
-  // Populate user for response
-  await order.populate('user', 'name email');
-
-  console.log('✅ Order status updated successfully');
-
-  res.status(200).json({
-    success: true,
-    message: `Order status updated to ${status}`,
-    data: order
-  });
 });
 
 // @desc    Get order statistics
@@ -233,34 +266,96 @@ const getOrderStats = asyncHandler(async (req, res) => {
 // @route   GET /api/admin/orders/export
 // @access  Private (Admin)
 const exportOrders = asyncHandler(async (req, res) => {
-  const { format = 'json', status, startDate, endDate } = req.query;
+  const { status, startDate, endDate } = req.query;
+
+  console.log('📊 Export request:', {
+    status,
+    startDate,
+    endDate
+  });
 
   const filter = {};
-  if (status && status !== 'all') {
+  
+  // Add status filter if provided
+  if (status && status !== 'all' && status !== '') {
     filter.status = status;
   }
+  
+  // Add date range filter if provided
   if (startDate && endDate) {
-    filter.createdAt = {
-      $gte: new Date(startDate),
-      $lte: new Date(endDate)
-    };
+    try {
+      filter.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    } catch (error) {
+      console.error('❌ Invalid date format:', error);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid date format provided'
+      });
+    }
   }
 
-  const orders = await Order.find(filter)
-    .populate('user', 'name email')
-    .sort({ createdAt: -1 });
+  console.log('🔍 Export filter:', filter);
 
-  if (format === 'csv') {
-    // Convert to CSV format
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename=orders.csv');
-    
-    // Implementation for CSV export
-    res.status(200).send('CSV export not implemented yet');
-  } else {
-    res.status(200).json({
-      success: true,
-      data: orders
+  try {
+    const orders = await Order.find(filter)
+      .populate('user', 'name email')
+      .sort({ createdAt: -1 });
+
+    console.log(`✅ Found ${orders.length} orders to export`);
+
+    // Create Excel data
+    const excelData = orders.map(order => ({
+      orderId: order._id.toString(),
+      customerName: order.user?.name || 'N/A',
+      customerEmail: order.user?.email || 'N/A',
+      status: order.status,
+      totalAmount: order.totalAmount,
+      items: order.items.length,
+      paymentMethod: order.paymentMethod || 'N/A',
+      shippingAddress: order.shippingAddress?.address || 'N/A',
+      createdAt: new Date(order.createdAt).toISOString(),
+      updatedAt: new Date(order.updatedAt).toISOString()
+    }));
+
+    // Create workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+    // Set column widths
+    const columnWidths = [
+      { wch: 24 }, // orderId
+      { wch: 20 }, // customerName
+      { wch: 25 }, // customerEmail
+      { wch: 12 }, // status
+      { wch: 12 }, // totalAmount
+      { wch: 8 },  // items
+      { wch: 15 }, // paymentMethod
+      { wch: 30 }, // shippingAddress
+      { wch: 20 }, // createdAt
+      { wch: 20 }  // updatedAt
+    ];
+    worksheet['!cols'] = columnWidths;
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Orders');
+
+    // Generate Excel file buffer
+    const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    // Set headers for Excel download
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=orders-export-${new Date().toISOString().split('T')[0]}.xlsx`);
+
+    // Send the Excel file
+    res.send(excelBuffer);
+  } catch (error) {
+    console.error('❌ Error exporting orders:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error while exporting orders'
     });
   }
 });

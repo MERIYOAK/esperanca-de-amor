@@ -795,7 +795,7 @@ const sendWelcomeEmail = async (email, name) => {
             <p>We promise to only send you valuable content and never spam your inbox. You can unsubscribe anytime if you change your mind.</p>
           </div>
           <div class="footer">
-            <p>🔒 If you ever want to unsubscribe, you can do so by clicking <a href="${process.env.FRONTEND_URL}/unsubscribe?email=${email}" class="unsubscribe-link">here</a>.</p>
+            <p>🔒 If you ever want to unsubscribe, you can do so by clicking <a href="${process.env.FRONTEND_URL}/unsubscribe?email=${encodeURIComponent(email)}" class="unsubscribe-link">here</a>.</p>
             <p>📧 This email was sent to ${email}</p>
             <p style="margin-top: 15px; font-size: 11px; color: #999;">
               EDA Store Newsletter • Stay updated with our latest offers and products
@@ -1168,7 +1168,7 @@ const sendWelcomeBackEmail = async (email, name) => {
             <p>Your preferences have been restored, and you'll start receiving our updates immediately. Thank you for coming back!</p>
           </div>
           <div class="footer">
-            <p>🔒 If you ever want to unsubscribe again, you can do so by clicking <a href="${process.env.FRONTEND_URL}/unsubscribe?email=${email}" class="unsubscribe-link">here</a>.</p>
+            <p>🔒 If you ever want to unsubscribe again, you can do so by clicking <a href="${process.env.FRONTEND_URL}/unsubscribe?email=${encodeURIComponent(email)}" class="unsubscribe-link">here</a>.</p>
             <p>📧 This email was sent to ${email}</p>
             <p style="margin-top: 15px; font-size: 11px; color: #999;">
               EDA Store Newsletter • Welcome back to our community!

@@ -11,18 +11,32 @@ interface Offer {
   _id: string;
   title: string;
   description: string;
+  code: string;
+  type: string;
+  discountValue: number;
+  discountType: 'percentage' | 'fixed';
+  minimumOrderAmount: number;
+  maximumDiscountAmount?: number;
+  startDate: string;
+  endDate: string;
+  usageLimit?: number;
+  isActive: boolean;
+  image?: string;
+  applicableProducts: Array<{
+    _id: string;
+    name: string;
+    price: number;
+    images: Array<{ url: string }>;
+  }>;
+  // Legacy fields for backward compatibility
   discount: number;
-  category: string;
+  validUntil: string;
   productIds: Array<{
     _id: string;
     name: string;
     price: number;
     images: Array<{ url: string }>;
   }>;
-  image: string;
-  validUntil: string;
-  isActive: boolean;
-  originalPrice?: number;
   claimedBy?: Array<{ user: string; claimedAt: string }>;
 }
 
@@ -52,6 +66,20 @@ const WeeklyOffers = () => {
       .join(' ');
   };
 
+  // Get discount display text
+  const getDiscountText = (offer: Offer) => {
+    if (offer.discountType === 'percentage') {
+      return `${offer.discountValue}% OFF`;
+    } else {
+      return `$${offer.discountValue} OFF`;
+    }
+  };
+
+  // Get discount display text (legacy support)
+  const getDiscountTextLegacy = (offer: Offer) => {
+    return `${offer.discount}% OFF`;
+  };
+
   // Fetch offers from backend
   useEffect(() => {
     console.log('WeeklyOffers: Component mounted, fetching offers...');
@@ -79,7 +107,9 @@ const WeeklyOffers = () => {
           const data = await response.json();
           console.log('WeeklyOffers: API response data:', data);
           console.log('WeeklyOffers: Offers array:', data.data?.offers);
-          setOffers(data.data.offers || []);
+          // Limit to 4 offers for home page
+          const limitedOffers = (data.data.offers || []).slice(0, 4);
+          setOffers(limitedOffers);
         } else if (response.status === 429) {
           console.warn('Rate limited - too many requests');
           if (retryCount < maxRetries) {
@@ -98,41 +128,26 @@ const WeeklyOffers = () => {
             {
               _id: 'fallback-1',
               title: 'Special Discount',
-              description: 'Limited time offer on selected products',
-              discount: 15,
-              category: 'Special Offer',
+              description: 'Get amazing discounts on selected items',
+              discount: 20,
+              category: 'special',
               productIds: [],
-              image: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop',
+              image: '',
               validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
               isActive: true,
-              originalPrice: 6000
-            },
-            {
-              _id: 'fallback-2',
-              title: 'Flash Sale',
-              description: 'Quick deals on popular items',
-              discount: 20,
-              category: 'Flash Sale',
-              productIds: [],
-              image: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop',
-              validUntil: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-              isActive: true,
-              originalPrice: 4000
+              claimedBy: []
             }
           ]);
         } else {
-          console.error('Failed to fetch offers:', response.status);
+          console.error('WeeklyOffers: Failed to fetch offers:', response.status);
           setOffers([]);
         }
-      } catch (error: any) {
-        if (!isMounted) return;
-        
+      } catch (error) {
         if (error.name === 'AbortError') {
-          console.log('Request aborted');
+          console.log('WeeklyOffers: Request aborted');
           return;
         }
-        
-        console.error('Error fetching offers:', error);
+        console.error('WeeklyOffers: Error fetching offers:', error);
         setOffers([]);
       } finally {
         if (isMounted) {
@@ -144,11 +159,10 @@ const WeeklyOffers = () => {
     fetchOffers();
 
     return () => {
-      console.log('WeeklyOffers: Component unmounting, cleaning up...');
       isMounted = false;
       abortController.abort();
     };
-  }, []); // Empty dependency array - only run once on mount
+  }, []);
 
   const handleClaimOffer = async (offer: Offer) => {
     if (!user) {
@@ -206,7 +220,7 @@ const WeeklyOffers = () => {
         // Show success message
         toast({
           title: 'Offer Claimed Successfully! 🎉',
-          description: `${productsCount} product${productsCount > 1 ? 's' : ''} from "${offer.title}" added to your cart with ${offer.discount}% discount!`,
+          description: `${productsCount} product${productsCount > 1 ? 's' : ''} from "${offer.title}" added to your cart with ${getDiscountText(offer)} discount!`,
           variant: 'default',
         });
         
@@ -313,9 +327,9 @@ const WeeklyOffers = () => {
             offers.map((offer, index) => (
               <Card key={offer._id} className={`group hover:shadow-glow transition-all duration-300 hover:-translate-y-2 overflow-hidden animate-scaleIn bg-white border-red-200`} style={{ animationDelay: `${index * 100}ms` }}>
                 <div className="relative overflow-hidden">
-                  {offer.discount > 0 && (
+                  {offer.discountValue > 0 && (
                     <div className="absolute top-2 md:top-3 left-2 md:left-3 z-10 bg-red-600 text-white px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-bold animate-pulse-slow">
-                      -{offer.discount}%
+                      {getDiscountText(offer)}
                     </div>
                   )}
                   
@@ -373,7 +387,7 @@ const WeeklyOffers = () => {
                 <CardContent className="p-3 md:p-6">
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-xs text-red-700 font-medium bg-red-100 px-2 py-1 rounded-full">
-                      {offer.category || 'Special Offer'}
+                      {offer.type || 'Special Offer'}
                     </span>
                     {hasUserClaimed(offer) && (
                       <span className="text-xs text-green-700 font-medium bg-green-100 px-2 py-1 rounded-full flex items-center">
@@ -394,7 +408,7 @@ const WeeklyOffers = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-1 md:space-x-2">
                       <span className="text-lg md:text-2xl font-bold text-red-600">
-                        {offer.discount}% OFF
+                        {getDiscountText(offer)}
                       </span>
                       {offer.originalPrice && (
                         <span className="text-xs md:text-sm text-gray-500 line-through">

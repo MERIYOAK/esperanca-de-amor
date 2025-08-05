@@ -10,19 +10,44 @@ const getOffers = asyncHandler(async (req, res) => {
   
   const offers = await Offer.find({ 
     isActive: true,
-    validFrom: { $lte: now },
-    validUntil: { $gte: now }
+    startDate: { $lte: now },
+    endDate: { $gte: now }
   })
-    .populate('productIds', 'name price images')
-    .populate('claimedBy.user', 'name email')
+    .populate('applicableProducts', 'name price images')
     .sort({ createdAt: -1 });
 
   console.log(`Found ${offers.length} valid offers at ${now.toISOString()}`);
 
+  // Transform offers to match frontend expectations
+  const transformedOffers = offers.map(offer => ({
+    _id: offer._id,
+    title: offer.title,
+    description: offer.description,
+    code: offer.code,
+    type: offer.type,
+    discountValue: offer.discountValue,
+    discountType: offer.discountType,
+    minimumOrderAmount: offer.minimumOrderAmount,
+    maximumDiscountAmount: offer.maximumDiscountAmount,
+    startDate: offer.startDate,
+    endDate: offer.endDate,
+    usageLimit: offer.usageLimit,
+    isActive: offer.isActive,
+    image: offer.image,
+    applicableProducts: offer.applicableProducts || [],
+    // Legacy fields for backward compatibility
+    discount: offer.discountValue,
+    validFrom: offer.startDate,
+    validUntil: offer.endDate,
+    productIds: offer.applicableProducts || [],
+    category: offer.type,
+    claimedBy: offer.claimedBy || []
+  }));
+
   res.status(200).json({
     success: true,
     data: {
-      offers
+      offers: transformedOffers
     }
   });
 });

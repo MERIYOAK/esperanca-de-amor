@@ -15,7 +15,8 @@ import {
   Eye,
   Package,
   Users,
-  MapPin
+  MapPin,
+  Check
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -28,14 +29,27 @@ interface Offer {
   _id: string;
   title: string;
   description: string;
+  code: string;
+  type: string;
+  discountValue: number;
+  discountType: 'percentage' | 'fixed';
+  minimumOrderAmount: number;
+  maximumDiscountAmount?: number;
+  startDate: string;
+  endDate: string;
+  usageLimit?: number;
+  isActive: boolean;
+  image?: string;
+  applicableProducts: Array<{
+    _id: string;
+    name: string;
+    price: number;
+    images: string[];
+  }>;
+  // Legacy fields for backward compatibility
   discount: number;
-  discountAmount?: number;
   validFrom: string;
   validUntil: string;
-  isActive: boolean;
-  maxClaims?: number;
-  claimedCount: number;
-  image?: string;
   productIds: Array<{
     _id: string;
     name: string;
@@ -46,6 +60,8 @@ interface Offer {
   category: string;
   targetAudience: string;
   displayLocation: string;
+  maxClaims?: number;
+  claimedCount: number;
 }
 
 const Offers = () => {
@@ -66,6 +82,7 @@ const Offers = () => {
         
         if (response.ok) {
           const data = await response.json();
+          // Show all active offers on the offers page
           setOffers(data.data?.offers || []);
         } else {
           setError('Failed to fetch offers');
@@ -109,6 +126,20 @@ const Offers = () => {
       default:
         return 'bg-red-100 text-red-800';
     }
+  };
+
+  // Get discount display text
+  const getDiscountText = (offer: Offer) => {
+    if (offer.discountType === 'percentage') {
+      return `${offer.discountValue}% OFF`;
+    } else {
+      return `$${offer.discountValue} OFF`;
+    }
+  };
+
+  // Get discount display text (legacy support)
+  const getDiscountTextLegacy = (offer: Offer) => {
+    return `${offer.discount}% OFF`;
   };
 
   const formatDate = (dateString: string) => {
@@ -212,7 +243,7 @@ const Offers = () => {
         // Show success message
         toast({
           title: 'Offer Claimed Successfully! 🎉',
-          description: `${productsCount} product${productsCount > 1 ? 's' : ''} from "${offer.title}" added to your cart with ${offer.discount}% discount!`,
+          description: `${productsCount} product${productsCount > 1 ? 's' : ''} from "${offer.title}" added to your cart with ${getDiscountText(offer)} discount!`,
           variant: 'default',
         });
         
@@ -372,10 +403,15 @@ const Offers = () => {
                       </div>
                       {!offer.image && (
                         <div className="text-right">
-                          <div className="text-2xl font-bold text-primary">
-                            {offer.discount}%
+                          <div className="flex items-center space-x-2">
+                            <span className="text-2xl font-bold text-red-600">
+                              {getDiscountText(offer)}
+                            </span>
+                            <Badge className="bg-green-100 text-green-800">
+                              <Check className="h-3 w-3 mr-1" />
+                              Active
+                            </Badge>
                           </div>
-                          <div className="text-sm text-gray-500">OFF</div>
                         </div>
                       )}
                     </div>

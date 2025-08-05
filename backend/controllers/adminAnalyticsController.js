@@ -1,16 +1,15 @@
-const asyncHandler = require('../utils/asyncHandler');
-const Product = require('../models/Product');
 const Order = require('../models/Order');
 const User = require('../models/User');
-const Announcement = require('../models/Announcement');
-const Offer = require('../models/Offer');
-const Newsletter = require('../models/Newsletter');
+const Product = require('../models/Product');
+const asyncHandler = require('../utils/asyncHandler');
+const XLSX = require('xlsx');
 
-// Get comprehensive analytics data
+// @desc    Get comprehensive analytics dashboard data
+// @route   GET /api/admin/analytics
+// @access  Private (Admin)
 const getAnalytics = asyncHandler(async (req, res) => {
   const { timeRange = '30d' } = req.query;
   
-  // Calculate date range based on timeRange
   const now = new Date();
   let startDate;
   
@@ -24,62 +23,30 @@ const getAnalytics = asyncHandler(async (req, res) => {
     case '90d':
       startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
       break;
-    case '1y':
-      startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-      break;
     default:
       startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   }
 
-  // Get previous period for growth calculation
-  const periodLength = now.getTime() - startDate.getTime();
-  const previousStartDate = new Date(startDate.getTime() - periodLength);
-
-  // Get all-time stats
   const [
-    allTimeOrders,
-    allTimeRevenue,
-    currentRevenue,
-    currentOrders,
-    currentCustomers,
-    previousRevenue,
-    previousOrders,
-    previousCustomers,
+    totalRevenue,
+    totalOrders,
+    totalCustomers,
     totalProducts,
-    totalUsers,
-    totalAnnouncements,
-    totalOffers,
-    totalNewsletterSubscribers,
+    revenueData,
+    orderData,
+    customerData,
     topProducts,
-    customerSegments,
     orderStatusDistribution,
-    monthlyTrends,
-    recentOrders
+    customerGrowth,
+    averageOrderValue,
+    conversionRate
   ] = await Promise.all([
-    // All-time orders
-    Order.countDocuments(),
-    
-    // All-time revenue
-    Order.aggregate([
-      {
-        $match: {
-          status: { $in: ['delivered'] }
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: '$totalAmount' }
-        }
-      }
-    ]),
-    
-    // Current period revenue
+    // Total revenue in time range
     Order.aggregate([
       {
         $match: {
           createdAt: { $gte: startDate },
-          status: { $in: ['delivered'] }
+          status: { $in: ['delivered', 'shipped'] }
         }
       },
       {
@@ -90,55 +57,87 @@ const getAnalytics = asyncHandler(async (req, res) => {
       }
     ]),
     
-    // Current period orders
-    Order.countDocuments({
+    // Total orders in time range
+    Order.countDocuments({ createdAt: { $gte: startDate } }),
+    
+    // Total customers in time range
+    User.countDocuments({ 
+      role: 'customer',
       createdAt: { $gte: startDate }
     }),
     
-    // Current period new customers
-    User.countDocuments({
-      createdAt: { $gte: startDate }
-    }),
+    // Total products
+    Product.countDocuments({ isActive: true }),
     
-    // Previous period revenue
-    Order.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: previousStartDate, $lt: startDate },
-          status: { $in: ['delivered'] }
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: '$totalAmount' }
-        }
-      }
-    ]),
-    
-    // Previous period orders
-    Order.countDocuments({
-      createdAt: { $gte: previousStartDate, $lt: startDate }
-    }),
-    
-    // Previous period new customers
-    User.countDocuments({
-      createdAt: { $gte: previousStartDate, $lt: startDate }
-    }),
-    
-    // Total counts
-    Product.countDocuments(),
-    User.countDocuments(),
-    Announcement.countDocuments(),
-    Offer.countDocuments({ isActive: true }),
-    Newsletter.countDocuments({ isSubscribed: true }),
-    
-    // Top performing products
+    // Revenue data for charts (daily)
     Order.aggregate([
       {
         $match: {
           createdAt: { $gte: startDate },
-          status: { $in: ['delivered'] }
+          status: { $in: ['delivered', 'shipped'] }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+          },
+          revenue: { $sum: '$totalAmount' },
+          orders: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { _id: 1 }
+      }
+    ]),
+    
+    // Order data for charts (daily)
+    Order.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { _id: 1 }
+      }
+    ]),
+    
+    // Customer growth data (daily)
+    User.aggregate([
+      {
+        $match: {
+          role: 'customer',
+          createdAt: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { _id: 1 }
+      }
+    ]),
+    
+    // Top selling products
+    Order.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startDate },
+          status: { $in: ['delivered', 'shipped'] }
         }
       },
       {
@@ -148,14 +147,8 @@ const getAnalytics = asyncHandler(async (req, res) => {
         $group: {
           _id: '$items.product',
           totalSold: { $sum: '$items.quantity' },
-          revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
+          totalRevenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
         }
-      },
-      {
-        $sort: { revenue: -1 }
-      },
-      {
-        $limit: 10
       },
       {
         $lookup: {
@@ -170,77 +163,17 @@ const getAnalytics = asyncHandler(async (req, res) => {
       },
       {
         $project: {
-          _id: 1,
           name: '$product.name',
-          category: '$product.category',
           totalSold: 1,
-          revenue: 1
-        }
-      }
-    ]),
-    
-    // Customer segments
-    Order.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: startDate },
-          status: { $in: ['delivered'] }
+          totalRevenue: 1,
+          image: { $arrayElemAt: ['$product.images', 0] }
         }
       },
       {
-        $group: {
-          _id: '$user',
-          totalSpent: { $sum: '$totalAmount' },
-          orderCount: { $sum: 1 }
-        }
+        $sort: { totalSold: -1 }
       },
       {
-        $lookup: {
-          from: 'users',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'user'
-        }
-      },
-      {
-        $unwind: '$user'
-      },
-      {
-        $addFields: {
-          segment: {
-            $cond: {
-              if: { $gte: ['$totalSpent', 1000] },
-              then: 'High Value',
-              else: {
-                $cond: {
-                  if: { $gte: ['$totalSpent', 500] },
-                  then: 'Medium Value',
-                  else: 'Low Value'
-                }
-              }
-            }
-          }
-        }
-      },
-      {
-        $group: {
-          _id: '$segment',
-          count: { $sum: 1 },
-          averageOrderValue: { $avg: '$totalSpent' }
-        }
-      },
-      {
-        $addFields: {
-          segment: '$_id'
-        }
-      },
-      {
-        $project: {
-          _id: 0,
-          segment: 1,
-          count: 1,
-          averageOrderValue: 1
-        }
+        $limit: 10
       }
     ]),
     
@@ -256,135 +189,140 @@ const getAnalytics = asyncHandler(async (req, res) => {
           _id: '$status',
           count: { $sum: 1 }
         }
-      },
-      {
-        $addFields: {
-          status: '$_id'
-        }
-      },
-      {
-        $project: {
-          _id: 0,
-          status: 1,
-          count: 1
-        }
       }
     ]),
     
-    // Monthly trends (last 12 months)
-    Order.aggregate([
+    // Customer growth (cumulative)
+    User.aggregate([
       {
         $match: {
-          createdAt: { $gte: new Date(now.getTime() - 12 * 30 * 24 * 60 * 60 * 1000) }
+          role: 'customer',
+          createdAt: { $gte: startDate }
         }
       },
       {
         $group: {
           _id: {
-            year: { $year: '$createdAt' },
-            month: { $month: '$createdAt' }
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
           },
-          revenue: { $sum: '$totalAmount' },
-          orders: { $sum: 1 }
+          count: { $sum: 1 }
         }
       },
       {
-        $sort: { '_id.year': 1, '_id.month': 1 }
-      },
-      {
-        $limit: 12
+        $sort: { _id: 1 }
       }
     ]),
     
-    // Recent orders
-    Order.find()
-      .sort({ createdAt: -1 })
-      .limit(10)
-      .populate('user', 'name email')
-      .populate('items.product', 'name price')
+    // Average order value
+    Order.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startDate },
+          status: { $in: ['delivered', 'shipped'] }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          averageValue: { $avg: '$totalAmount' }
+        }
+      }
+    ]),
+    
+    // Conversion rate (orders per customer)
+    Order.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: '$user',
+          orderCount: { $sum: 1 }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalOrders: { $sum: '$orderCount' },
+          uniqueCustomers: { $sum: 1 }
+        }
+      }
+    ])
   ]);
 
-  // Calculate growth percentages
-  const currentRevenueTotal = currentRevenue[0]?.total || 0;
-  const previousRevenueTotal = previousRevenue[0]?.total || 0;
-  const allTimeRevenueTotal = allTimeRevenue[0]?.total || 0;
-  
-  const revenueGrowth = previousRevenueTotal > 0 
-    ? ((currentRevenueTotal - previousRevenueTotal) / previousRevenueTotal) * 100 
-    : 0;
+  // Calculate metrics
+  const totalRevenueAmount = totalRevenue[0]?.total || 0;
+  const avgOrderValue = averageOrderValue[0]?.averageValue || 0;
+  const conversionData = conversionRate[0];
+  const conversionRateValue = conversionData ? (conversionData.totalOrders / conversionData.uniqueCustomers) : 0;
 
-  const orderGrowth = previousOrders > 0 
-    ? ((currentOrders - previousOrders) / previousOrders) * 100 
-    : 0;
-
-  const customerGrowth = previousCustomers > 0 
-    ? ((currentCustomers - previousCustomers) / previousCustomers) * 100 
-    : 0;
-
-  // Calculate percentages for customer segments
-  const totalCustomers = customerSegments.reduce((sum, segment) => sum + segment.count, 0);
-  const segmentsWithPercentage = customerSegments.map(segment => ({
-    ...segment,
-    percentage: totalCustomers > 0 ? (segment.count / totalCustomers) * 100 : 0
+  // Process chart data
+  const revenueChartData = revenueData.map(item => ({
+    date: item._id,
+    revenue: item.revenue / 100, // Convert from cents
+    orders: item.orders
   }));
 
-  // Calculate percentages for order status
-  const totalOrders = orderStatusDistribution.reduce((sum, status) => sum + status.count, 0);
-  const statusWithPercentage = orderStatusDistribution.map(status => ({
-    ...status,
-    percentage: totalOrders > 0 ? (status.count / totalOrders) * 100 : 0
+  const orderChartData = orderData.map(item => ({
+    date: item._id,
+    orders: item.count
   }));
 
-  // Format monthly trends
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-
-  const formattedMonthlyTrends = monthlyTrends.map(trend => ({
-    month: `${monthNames[trend._id.month - 1]} ${trend._id.year}`,
-    revenue: trend.revenue,
-    orders: trend.orders,
-    customers: 0 // Would need additional aggregation for customers per month
+  const customerChartData = customerGrowth.map(item => ({
+    date: item._id,
+    customers: item.count
   }));
 
-  // Calculate average order value
-  const averageOrderValue = currentOrders > 0 ? currentRevenueTotal / currentOrders : 0;
+  // Calculate cumulative customer growth
+  let cumulative = 0;
+  const cumulativeCustomerData = customerChartData.map(item => {
+    cumulative += item.customers;
+    return {
+      date: item.date,
+      customers: cumulative
+    };
+  });
 
-  const analyticsData = {
+  const analytics = {
     overview: {
-      totalRevenue: currentRevenueTotal,
+      totalRevenue: totalRevenueAmount / 100, // Convert from cents
       totalOrders,
       totalCustomers,
-      averageOrderValue,
-      revenueGrowth,
-      orderGrowth,
-      customerGrowth,
-      allTimeOrders,
-      allTimeRevenue: allTimeRevenueTotal
+      totalProducts,
+      averageOrderValue: avgOrderValue / 100, // Convert from cents
+      conversionRate: conversionRateValue
     },
-    salesData: [], // Would need daily aggregation for chart data
+    charts: {
+      revenue: revenueChartData,
+      orders: orderChartData,
+      customers: cumulativeCustomerData
+    },
     topProducts,
-    customerSegments: segmentsWithPercentage,
-    orderStatusDistribution: statusWithPercentage,
-    monthlyTrends: formattedMonthlyTrends,
-    recentOrders
+    orderStatusDistribution: orderStatusDistribution.reduce((acc, item) => {
+      acc[item._id] = item.count;
+      return acc;
+    }, {}),
+    timeRange
   };
 
   res.status(200).json({
     success: true,
-    data: analyticsData
+    data: analytics
   });
 });
 
-// Get sales trend data for charts
+// @desc    Get sales trend data
+// @route   GET /api/admin/analytics/sales-trend
+// @access  Private (Admin)
 const getSalesTrend = asyncHandler(async (req, res) => {
-  const { timeRange = '30d' } = req.query;
+  const { period = '30d' } = req.query;
   
   const now = new Date();
   let startDate;
   
-  switch (timeRange) {
+  switch (period) {
     case '7d':
       startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       break;
@@ -402,59 +340,266 @@ const getSalesTrend = asyncHandler(async (req, res) => {
     {
       $match: {
         createdAt: { $gte: startDate },
-        status: { $in: ['delivered'] }
+        status: { $in: ['delivered', 'shipped'] }
       }
     },
     {
       $group: {
         _id: {
-          date: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }
+          $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
         },
         revenue: { $sum: '$totalAmount' },
         orders: { $sum: 1 }
       }
     },
     {
-      $sort: { '_id.date': 1 }
+      $sort: { _id: 1 }
     }
   ]);
 
-  const formattedData = salesData.map(item => ({
-    date: item._id.date,
-    revenue: item.revenue,
+  const trendData = salesData.map(item => ({
+    date: item._id,
+    revenue: item.revenue / 100, // Convert from cents
     orders: item.orders
   }));
 
   res.status(200).json({
     success: true,
-    data: formattedData
+    data: {
+      trendData,
+      period
+    }
   });
 });
 
-// Export analytics data
+// @desc    Export analytics data
+// @route   GET /api/admin/analytics/export
+// @access  Private (Admin)
 const exportAnalytics = asyncHandler(async (req, res) => {
-  const { format = 'json' } = req.query;
+  const { timeRange = '30d' } = req.query;
   
-  // Get comprehensive analytics data
-  const analyticsData = await getAnalytics(req, res);
+  const now = new Date();
+  let startDate;
   
-  if (format === 'csv') {
-    // Convert to CSV format
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename=analytics.csv');
-    
-    // Implementation for CSV export
-    res.status(200).send('CSV export not implemented yet');
-  } else {
-    res.status(200).json({
-      success: true,
-      data: analyticsData
-    });
+  switch (timeRange) {
+    case '7d':
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      break;
+    case '30d':
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      break;
+    case '90d':
+      startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      break;
+    default:
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   }
+
+  const [orders, customers, products] = await Promise.all([
+    Order.find({ createdAt: { $gte: startDate } })
+      .populate('user', 'name email')
+      .sort({ createdAt: -1 }),
+    User.find({ 
+      role: 'customer',
+      createdAt: { $gte: startDate }
+    })
+      .select('-password')
+      .sort({ createdAt: -1 }),
+    Product.find({ isActive: true })
+      .sort({ createdAt: -1 })
+  ]);
+
+  // Create workbook
+  const workbook = XLSX.utils.book_new();
+
+  // Summary worksheet
+  const summaryData = [{
+    metric: 'Total Orders',
+    value: orders.length,
+    period: `${timeRange} period`
+  }, {
+    metric: 'Total Customers',
+    value: customers.length,
+    period: `${timeRange} period`
+  }, {
+    metric: 'Total Products',
+    value: products.length,
+    period: 'Active products'
+  }, {
+    metric: 'Total Revenue',
+    value: `$${(orders
+      .filter(order => ['delivered', 'shipped'].includes(order.status))
+      .reduce((sum, order) => sum + order.totalAmount, 0) / 100).toFixed(2)}`,
+    period: `${timeRange} period`
+  }];
+
+  const summaryWorksheet = XLSX.utils.json_to_sheet(summaryData);
+  summaryWorksheet['!cols'] = [
+    { wch: 20 }, // metric
+    { wch: 15 }, // value
+    { wch: 20 }  // period
+  ];
+  XLSX.utils.book_append_sheet(workbook, summaryWorksheet, 'Summary');
+
+  // Orders worksheet
+  const ordersData = orders.map(order => ({
+    orderId: order._id.toString(),
+    customerName: order.user?.name || 'N/A',
+    customerEmail: order.user?.email || 'N/A',
+    status: order.status,
+    totalAmount: `$${(order.totalAmount / 100).toFixed(2)}`,
+    items: order.items.length,
+    createdAt: new Date(order.createdAt).toISOString()
+  }));
+
+  const ordersWorksheet = XLSX.utils.json_to_sheet(ordersData);
+  ordersWorksheet['!cols'] = [
+    { wch: 24 }, // orderId
+    { wch: 20 }, // customerName
+    { wch: 25 }, // customerEmail
+    { wch: 12 }, // status
+    { wch: 12 }, // totalAmount
+    { wch: 8 },  // items
+    { wch: 20 }  // createdAt
+  ];
+  XLSX.utils.book_append_sheet(workbook, ordersWorksheet, 'Orders');
+
+  // Customers worksheet
+  const customersData = customers.map(customer => ({
+    name: customer.name,
+    email: customer.email,
+    phone: customer.phone || 'N/A',
+    isActive: customer.isActive ? 'Yes' : 'No',
+    createdAt: new Date(customer.createdAt).toISOString()
+  }));
+
+  const customersWorksheet = XLSX.utils.json_to_sheet(customersData);
+  customersWorksheet['!cols'] = [
+    { wch: 20 }, // name
+    { wch: 25 }, // email
+    { wch: 15 }, // phone
+    { wch: 10 }, // isActive
+    { wch: 20 }  // createdAt
+  ];
+  XLSX.utils.book_append_sheet(workbook, customersWorksheet, 'Customers');
+
+  // Products worksheet
+  const productsData = products.map(product => ({
+    name: product.name,
+    price: `$${(product.price / 100).toFixed(2)}`,
+    category: product.category,
+    stock: product.stock,
+    isActive: product.isActive ? 'Yes' : 'No',
+    createdAt: new Date(product.createdAt).toISOString()
+  }));
+
+  const productsWorksheet = XLSX.utils.json_to_sheet(productsData);
+  productsWorksheet['!cols'] = [
+    { wch: 25 }, // name
+    { wch: 12 }, // price
+    { wch: 15 }, // category
+    { wch: 8 },  // stock
+    { wch: 10 }, // isActive
+    { wch: 20 }  // createdAt
+  ];
+  XLSX.utils.book_append_sheet(workbook, productsWorksheet, 'Products');
+
+  // Generate Excel file buffer
+  const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+  // Set headers for Excel download
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename=analytics-export-${new Date().toISOString().split('T')[0]}.xlsx`);
+
+  // Send the Excel file
+  res.send(excelBuffer);
+});
+
+// @desc    Export sales trend data
+// @route   GET /api/admin/analytics/sales-trend/export
+// @access  Private (Admin)
+const exportSalesTrend = asyncHandler(async (req, res) => {
+  const { period = '30d' } = req.query;
+  
+  const now = new Date();
+  let startDate;
+  
+  switch (period) {
+    case '7d':
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      break;
+    case '30d':
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      break;
+    case '90d':
+      startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      break;
+    default:
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  }
+
+  const salesData = await Order.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: startDate },
+        status: { $in: ['delivered', 'shipped'] }
+      }
+    },
+    {
+      $group: {
+        _id: {
+          $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+        },
+        revenue: { $sum: '$totalAmount' },
+        orders: { $sum: 1 },
+        averageOrderValue: { $avg: '$totalAmount' }
+      }
+    },
+    {
+      $sort: { _id: 1 }
+    }
+  ]);
+
+  // Create Excel data
+  const excelData = salesData.map(item => ({
+    date: item._id,
+    revenue: `$${(item.revenue / 100).toFixed(2)}`,
+    orders: item.orders,
+    averageOrderValue: `$${(item.averageOrderValue / 100).toFixed(2)}`,
+    period: period
+  }));
+
+  // Create workbook and worksheet
+  const workbook = XLSX.utils.book_new();
+  const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+  // Set column widths
+  const columnWidths = [
+    { wch: 15 }, // date
+    { wch: 15 }, // revenue
+    { wch: 12 }, // orders
+    { wch: 18 }, // averageOrderValue
+    { wch: 10 }  // period
+  ];
+  worksheet['!cols'] = columnWidths;
+
+  // Add worksheet to workbook
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Sales Trend');
+
+  // Generate Excel file buffer
+  const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+  // Set headers for Excel download
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename=sales-trend-export-${new Date().toISOString().split('T')[0]}.xlsx`);
+
+  // Send the Excel file
+  res.send(excelBuffer);
 });
 
 module.exports = {
   getAnalytics,
   getSalesTrend,
-  exportAnalytics
+  exportAnalytics,
+  exportSalesTrend
 }; 
