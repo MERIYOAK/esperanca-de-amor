@@ -2,10 +2,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigationType } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
+import { useEffect, useRef } from "react";
 import Index from "./pages/Index";
 import Shop from "./pages/Shop";
 import About from "./pages/About";
@@ -28,6 +29,90 @@ import "./utils/googleOAuthTest"; // Import to run Google OAuth test
 
 const queryClient = new QueryClient();
 
+// Scroll restoration hook
+const useScrollRestoration = () => {
+  const location = useLocation();
+  const navigationType = useNavigationType();
+  const scrollPositions = useRef<Map<string, number>>(new Map());
+  const isInitialMount = useRef(true);
+
+  useEffect(() => {
+    const currentPath = location.pathname + location.search;
+
+    // Save current scroll position before navigation
+    if (!isInitialMount.current) {
+      scrollPositions.current.set(currentPath, window.scrollY);
+    }
+
+    // Handle scroll restoration
+    if (navigationType === 'POP') {
+      // Back/forward navigation - restore scroll position
+      const savedPosition = scrollPositions.current.get(currentPath);
+      if (savedPosition !== undefined) {
+        // Use requestAnimationFrame for smooth restoration
+        requestAnimationFrame(() => {
+          window.scrollTo({
+            top: savedPosition,
+            behavior: 'instant' // Use instant for restoration to avoid animation
+          });
+        });
+      } else {
+        // No saved position, scroll to top
+        window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+      }
+    } else {
+      // New navigation - scroll to top
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+
+    isInitialMount.current = false;
+  }, [location, navigationType]);
+
+  // Save scroll position on page unload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const currentPath = location.pathname + location.search;
+      scrollPositions.current.set(currentPath, window.scrollY);
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [location]);
+
+  // Save scroll position on route change
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentPath = location.pathname + location.search;
+      scrollPositions.current.set(currentPath, window.scrollY);
+    };
+
+    // Throttle scroll events for performance
+    let timeoutId: NodeJS.Timeout;
+    const throttledScroll = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(handleScroll, 100);
+    };
+
+    window.addEventListener('scroll', throttledScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', throttledScroll);
+      clearTimeout(timeoutId);
+    };
+  }, [location]);
+};
+
+// Scroll restoration component
+const ScrollRestoration = () => {
+  useScrollRestoration();
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -37,6 +122,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <ScrollRestoration />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/shop" element={<Shop />} />
