@@ -639,27 +639,30 @@ const OfferManagement = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Offer Management</h2>
-          <p className="text-gray-600">Create and manage promotional offers and discounts</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Offer Management</h2>
+          <p className="text-sm text-gray-600">Create and manage promotional offers and discounts</p>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
           <Button variant="outline" size="sm" className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white" onClick={handleExportOffers}>
             <Download className="h-4 w-4 mr-2" />
-            Export Offers
+            <span className="hidden sm:inline">Export Offers</span>
+            <span className="sm:hidden">Export</span>
           </Button>
           <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleViewAnalytics}>
             <Activity className="h-4 w-4 mr-2" />
-            View Analytics
+            <span className="hidden sm:inline">View Analytics</span>
+            <span className="sm:hidden">Analytics</span>
           </Button>
           <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={() => {
             setShowCreateModal(true);
           }}>
             <Plus className="h-4 w-4 mr-2" />
-            Create Offer
+            <span className="hidden sm:inline">Create Offer</span>
+            <span className="sm:hidden">Create</span>
           </Button>
         </div>
       </div>
@@ -667,13 +670,13 @@ const OfferManagement = () => {
       {/* Filters and Search */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
+          <CardTitle className="flex items-center text-base sm:text-lg">
             <Filter className="h-5 w-5 mr-2" />
             Filters & Search
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
@@ -681,13 +684,13 @@ const OfferManagement = () => {
                 placeholder="Search offers by title, code..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
               />
             </div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
             >
               <option value="">All Statuses</option>
               <option value="active">Active</option>
@@ -696,7 +699,7 @@ const OfferManagement = () => {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
             >
               <option value="">All Types</option>
               <option value="discount">Discount</option>
@@ -714,7 +717,7 @@ const OfferManagement = () => {
                   setTypeFilter('');
                   setCurrentPage(1);
                 }}
-                className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white text-sm w-full sm:w-auto"
               >
                 Clear Filters
               </Button>
@@ -728,10 +731,10 @@ const OfferManagement = () => {
         {offers.map((offer) => (
           <Card key={offer._id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center space-x-4">
                   {offer.image && (
-                    <div className="w-16 h-16 rounded-lg overflow-hidden border">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border flex-shrink-0">
                       <img 
                         src={offer.image} 
                         alt={offer.title}
@@ -739,30 +742,30 @@ const OfferManagement = () => {
                       />
                     </div>
                   )}
-                  <div className="flex items-center space-x-2">
-                    <Tag className="h-5 w-5 text-red-600" />
-                    <div>
-                      <CardTitle className="text-lg">{offer.title}</CardTitle>
-                      <CardDescription>
-                        Code: <span className="font-mono bg-gray-100 px-2 py-1 rounded">{offer.code}</span>
+                  <div className="flex items-center space-x-2 min-w-0 flex-1">
+                    <Tag className="h-5 w-5 text-red-600 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <CardTitle className="text-base sm:text-lg truncate">{offer.title}</CardTitle>
+                      <CardDescription className="text-sm">
+                        Code: <span className="font-mono bg-gray-100 px-2 py-1 rounded text-xs">{offer.code}</span>
                       </CardDescription>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Badge className={getStatusColor(offer.isActive)}>
                     {getStatusIcon(offer.isActive)}
-                    <span className="ml-1">{offer.isActive ? 'Active' : 'Inactive'}</span>
+                    <span className="ml-1 text-xs">{offer.isActive ? 'Active' : 'Inactive'}</span>
                   </Badge>
                   {isExpired(offer.endDate) && (
-                    <Badge className="bg-red-100 text-red-800">
-                      <Clock className="h-4 w-4 mr-1" />
+                    <Badge className="bg-red-100 text-red-800 text-xs">
+                      <Clock className="h-3 w-3 mr-1" />
                       Expired
                     </Badge>
                   )}
                   {isExpiringSoon(offer.endDate) && !isExpired(offer.endDate) && (
-                    <Badge className="bg-yellow-100 text-yellow-800">
-                      <AlertCircle className="h-4 w-4 mr-1" />
+                    <Badge className="bg-yellow-100 text-yellow-800 text-xs">
+                      <AlertCircle className="h-3 w-3 mr-1" />
                       Expiring Soon
                     </Badge>
                   )}
@@ -772,9 +775,9 @@ const OfferManagement = () => {
             
             <CardContent className="space-y-4">
               {/* Offer Info */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <h4 className="font-medium text-gray-900 flex items-center">
+                  <h4 className="font-medium text-gray-900 flex items-center text-sm">
                     <Info className="h-4 w-4 mr-2" />
                     Offer Details
                   </h4>
@@ -797,7 +800,7 @@ const OfferManagement = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <h4 className="font-medium text-gray-900 flex items-center">
+                  <h4 className="font-medium text-gray-900 flex items-center text-sm">
                     <Calendar className="h-4 w-4 mr-2" />
                     Validity Period
                   </h4>
@@ -811,7 +814,7 @@ const OfferManagement = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <h4 className="font-medium text-gray-900 flex items-center">
+                  <h4 className="font-medium text-gray-900 flex items-center text-sm">
                     <Users className="h-4 w-4 mr-2" />
                     Applicable Products
                   </h4>
@@ -831,40 +834,43 @@ const OfferManagement = () => {
               </div>
 
               {/* Actions */}
-              <div className="flex items-center justify-between pt-4 border-t">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-4 border-t gap-4">
                 <div className="text-sm text-gray-600">
                   <p>Created: {new Date(offer.createdAt).toLocaleDateString()}</p>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => handleViewOfferDetails(offer._id)}
-                    className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                    className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white text-sm"
                   >
                     <Eye className="h-4 w-4 mr-1" />
-                    View Details
+                    <span className="hidden sm:inline">View Details</span>
+                    <span className="sm:hidden">Details</span>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleToggleOfferStatus(offer._id)}
                     className={offer.isActive 
-                      ? "border-red-600 text-red-600 hover:bg-red-600 hover:text-white" 
-                      : "border-green-600 text-green-600 hover:bg-green-600 hover:text-white"
+                      ? "border-red-600 text-red-600 hover:bg-red-600 hover:text-white text-sm" 
+                      : "border-green-600 text-green-600 hover:bg-green-600 hover:text-white text-sm"
                     }
                   >
                     {offer.isActive ? <XCircle className="h-4 w-4 mr-1" /> : <CheckCircle className="h-4 w-4 mr-1" />}
-                    {offer.isActive ? 'Deactivate' : 'Activate'}
+                    <span className="hidden sm:inline">{offer.isActive ? 'Deactivate' : 'Activate'}</span>
+                    <span className="sm:hidden">{offer.isActive ? 'Deactivate' : 'Activate'}</span>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleDeleteOffer(offer._id)}
-                    className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                    className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white text-sm"
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
-                    Delete
+                    <span className="hidden sm:inline">Delete</span>
+                    <span className="sm:hidden">Delete</span>
                   </Button>
                 </div>
               </div>
@@ -875,8 +881,8 @@ const OfferManagement = () => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-600">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-gray-600 text-center sm:text-left">
             Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, totalOffers)} of {totalOffers} offers
           </p>
           <div className="flex items-center space-x-2">
@@ -885,7 +891,7 @@ const OfferManagement = () => {
               size="sm"
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               Previous
             </Button>
@@ -897,7 +903,7 @@ const OfferManagement = () => {
               size="sm"
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               Next
             </Button>
@@ -909,7 +915,7 @@ const OfferManagement = () => {
         <div className="text-center py-12">
           <Tag className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No Offers Found</h3>
-          <p className="text-gray-600">
+          <p className="text-gray-600 text-sm">
             {searchTerm || statusFilter || typeFilter 
               ? "Try adjusting your search or filter criteria"
               : "No offers have been created yet"
@@ -925,14 +931,14 @@ const OfferManagement = () => {
           onClick={handleCloseOfferModal}
         >
           <div 
-            className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b">
-              <div className="flex items-center space-x-3">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b">
+              <div className="flex items-center space-x-3 min-w-0 flex-1">
                 {selectedOffer.image && (
-                  <div className="w-20 h-20 rounded-lg overflow-hidden border">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border flex-shrink-0">
                     <img 
                       src={selectedOffer.image} 
                       alt={selectedOffer.title}
@@ -940,45 +946,46 @@ const OfferManagement = () => {
                     />
                   </div>
                 )}
-                <div className="flex items-center space-x-3">
-                  <Tag className="h-6 w-6 text-red-600" />
-                  <div>
-                    <h2 className="text-xl font-bold text-gray-900">
+                <div className="flex items-center space-x-3 min-w-0 flex-1">
+                  <Tag className="h-6 w-6 text-red-600 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate">
                       {selectedOffer.title}
                     </h2>
                     <p className="text-sm text-gray-600">
-                      Code: <span className="font-mono bg-gray-100 px-2 py-1 rounded">{selectedOffer.code}</span>
+                      Code: <span className="font-mono bg-gray-100 px-2 py-1 rounded text-xs">{selectedOffer.code}</span>
                     </p>
                   </div>
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={handleCloseOfferModal} className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white">
+              <Button variant="outline" size="sm" onClick={handleCloseOfferModal} className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white flex-shrink-0">
                 <X className="h-4 w-4" />
+                <span className="sr-only">Close Offer Details</span>
               </Button>
             </div>
 
             {/* Modal Content */}
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* Offer Status */}
               <div className="space-y-2">
-                <h3 className="font-medium text-gray-900 flex items-center">
+                <h3 className="font-medium text-gray-900 flex items-center text-sm">
                   <Info className="h-4 w-4 mr-2" />
                   Offer Status
                 </h3>
-                <div className="flex items-center space-x-4">
+                <div className="flex flex-wrap items-center gap-2">
                   <Badge className={getStatusColor(selectedOffer.isActive)}>
                     {getStatusIcon(selectedOffer.isActive)}
-                    <span className="ml-1">{selectedOffer.isActive ? 'Active' : 'Inactive'}</span>
+                    <span className="ml-1 text-xs">{selectedOffer.isActive ? 'Active' : 'Inactive'}</span>
                   </Badge>
                   {isExpired(selectedOffer.endDate) && (
-                    <Badge className="bg-red-100 text-red-800">
-                      <Clock className="h-4 w-4 mr-1" />
+                    <Badge className="bg-red-100 text-red-800 text-xs">
+                      <Clock className="h-3 w-3 mr-1" />
                       Expired
                     </Badge>
                   )}
                   {isExpiringSoon(selectedOffer.endDate) && !isExpired(selectedOffer.endDate) && (
-                    <Badge className="bg-yellow-100 text-yellow-800">
-                      <AlertCircle className="h-4 w-4 mr-1" />
+                    <Badge className="bg-yellow-100 text-yellow-800 text-xs">
+                      <AlertCircle className="h-3 w-3 mr-1" />
                       Expiring Soon
                     </Badge>
                   )}
@@ -987,11 +994,11 @@ const OfferManagement = () => {
 
               {/* Offer Information */}
               <div className="space-y-3">
-                <h3 className="font-medium text-gray-900 flex items-center">
+                <h3 className="font-medium text-gray-900 flex items-center text-sm">
                   <Info className="h-4 w-4 mr-2" />
                   Offer Information
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
                   <div className="space-y-2">
                     <p className="text-sm">
                       <span className="font-medium">Title:</span> {selectedOffer.title}
@@ -1007,7 +1014,7 @@ const OfferManagement = () => {
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <h4 className="font-medium text-gray-900 flex items-center">
+                    <h4 className="font-medium text-gray-900 flex items-center text-sm">
                       <Calendar className="h-4 w-4 mr-2" />
                       Validity Period
                     </h4>
@@ -1031,11 +1038,11 @@ const OfferManagement = () => {
               {/* Applicable Products */}
               {selectedOffer.applicableProducts.length > 0 && (
                 <div className="space-y-3">
-                  <h3 className="font-medium text-gray-900 flex items-center">
+                  <h3 className="font-medium text-gray-900 flex items-center text-sm">
                     <Users className="h-4 w-4 mr-2" />
                     Applicable Products ({selectedOffer.applicableProducts.length})
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {selectedOffer.applicableProducts.map((product, index) => (
                       <div key={index} className="p-3 bg-gray-50 rounded-lg">
                         <p className="font-medium text-sm">{product.name}</p>
@@ -1048,7 +1055,7 @@ const OfferManagement = () => {
 
               {/* Actions */}
               <div className="border-t pt-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="space-y-1">
                     <p className="text-sm text-gray-600">
                       Created: {new Date(selectedOffer.createdAt).toLocaleDateString()}
@@ -1057,27 +1064,29 @@ const OfferManagement = () => {
                       Updated: {new Date(selectedOffer.updatedAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => handleToggleOfferStatus(selectedOffer._id)}
                       className={selectedOffer.isActive 
-                        ? "border-red-600 text-red-600 hover:bg-red-600 hover:text-white" 
-                        : "border-green-600 text-green-600 hover:bg-green-600 hover:text-white"
+                        ? "border-red-600 text-red-600 hover:bg-red-600 hover:text-white text-sm" 
+                        : "border-green-600 text-green-600 hover:bg-green-600 hover:text-white text-sm"
                       }
                     >
                       {selectedOffer.isActive ? <XCircle className="h-4 w-4 mr-1" /> : <CheckCircle className="h-4 w-4 mr-1" />}
-                      {selectedOffer.isActive ? 'Deactivate' : 'Activate'}
+                      <span className="hidden sm:inline">{selectedOffer.isActive ? 'Deactivate' : 'Activate'}</span>
+                      <span className="sm:hidden">{selectedOffer.isActive ? 'Deactivate' : 'Activate'}</span>
                     </Button>
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => handleDeleteOffer(selectedOffer._id)}
-                      className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                      className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white text-sm"
                     >
                       <Trash2 className="h-4 w-4 mr-1" />
-                      Delete Offer
+                      <span className="hidden sm:inline">Delete Offer</span>
+                      <span className="sm:hidden">Delete</span>
                     </Button>
                   </div>
                 </div>
@@ -1094,17 +1103,17 @@ const OfferManagement = () => {
           onClick={handleCloseAnalyticsModal}
         >
           <div 
-            className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-red-100 rounded-lg">
                   <Activity className="h-6 w-6 text-red-600" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">
                     Offer Analytics Dashboard
                   </h2>
                   <p className="text-sm text-gray-600">
@@ -1114,11 +1123,12 @@ const OfferManagement = () => {
               </div>
               <Button variant="outline" size="sm" onClick={handleCloseAnalyticsModal} className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white">
                 <X className="h-4 w-4" />
+                <span className="sr-only">Close Analytics</span>
               </Button>
             </div>
 
             {/* Modal Content */}
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {analyticsLoading ? (
                 <div className="flex items-center justify-center h-64">
                   <div className="text-center">
@@ -1127,75 +1137,75 @@ const OfferManagement = () => {
                   </div>
                 </div>
               ) : analyticsData ? (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   {/* Key Metrics */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 sm:p-6 rounded-lg">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm opacity-90">Total Offers</p>
-                          <p className="text-2xl font-bold">{analyticsData.totalOffers}</p>
+                          <p className="text-xs sm:text-sm opacity-90">Total Offers</p>
+                          <p className="text-xl sm:text-2xl font-bold">{analyticsData.totalOffers}</p>
                         </div>
-                        <Tag className="h-8 w-8 opacity-80" />
+                        <Tag className="h-6 w-6 sm:h-8 sm:w-8 opacity-80" />
                       </div>
                     </div>
                     
-                    <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-lg">
+                    <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 sm:p-6 rounded-lg">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm opacity-90">Active Offers</p>
-                          <p className="text-2xl font-bold">{analyticsData.activeOffers}</p>
+                          <p className="text-xs sm:text-sm opacity-90">Active Offers</p>
+                          <p className="text-xl sm:text-2xl font-bold">{analyticsData.activeOffers}</p>
                         </div>
-                        <CheckCircle className="h-8 w-8 opacity-80" />
+                        <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 opacity-80" />
                       </div>
                     </div>
                     
-                    <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-lg">
+                    <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-4 sm:p-6 rounded-lg">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm opacity-90">Inactive Offers</p>
-                          <p className="text-2xl font-bold">{analyticsData.inactiveOffers}</p>
+                          <p className="text-xs sm:text-sm opacity-90">Inactive Offers</p>
+                          <p className="text-xl sm:text-2xl font-bold">{analyticsData.inactiveOffers}</p>
                         </div>
-                        <XCircle className="h-8 w-8 opacity-80" />
+                        <XCircle className="h-6 w-6 sm:h-8 sm:w-8 opacity-80" />
                       </div>
                     </div>
                     
-                    <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white p-6 rounded-lg">
+                    <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white p-4 sm:p-6 rounded-lg">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm opacity-90">Expiring Soon</p>
-                          <p className="text-2xl font-bold">{analyticsData.expiringOffers}</p>
+                          <p className="text-xs sm:text-sm opacity-90">Expiring Soon</p>
+                          <p className="text-xl sm:text-2xl font-bold">{analyticsData.expiringOffers}</p>
                         </div>
-                        <AlertCircle className="h-8 w-8 opacity-80" />
+                        <AlertCircle className="h-6 w-6 sm:h-8 sm:w-8 opacity-80" />
                       </div>
                     </div>
                   </div>
 
                   {/* Additional Stats */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-gray-50 p-6 rounded-lg">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Offer Performance</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Offer Performance</h3>
                       <div className="space-y-3">
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Active Rate:</span>
+                          <span className="text-sm text-gray-600">Active Rate:</span>
                           <span className="font-semibold">{analyticsData.activePercentage.toFixed(1)}%</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Total Offers:</span>
+                          <span className="text-sm text-gray-600">Total Offers:</span>
                           <span className="font-semibold">{analyticsData.totalOffers}</span>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="bg-gray-50 p-6 rounded-lg">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                    <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
                       <div className="space-y-3">
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Last Updated:</span>
+                          <span className="text-sm text-gray-600">Last Updated:</span>
                           <span className="font-semibold">{new Date().toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Expiring Offers:</span>
+                          <span className="text-sm text-gray-600">Expiring Offers:</span>
                           <span className="font-semibold">{analyticsData.expiringOffers}</span>
                         </div>
                       </div>
@@ -1203,19 +1213,20 @@ const OfferManagement = () => {
                   </div>
 
                   {/* Quick Actions */}
-                  <div className="flex items-center justify-between pt-4 border-t">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-4 border-t gap-4">
                     <div className="text-sm text-gray-600">
                       <p>Last updated: {new Date().toLocaleString()}</p>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                       <Button 
                         variant="outline" 
                         size="sm" 
                         onClick={handleExportOffers}
-                        className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                        className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white text-sm"
                       >
                         <Download className="h-4 w-4 mr-1" />
-                        Export Data
+                        <span className="hidden sm:inline">Export Data</span>
+                        <span className="sm:hidden">Export</span>
                       </Button>
                       <Button 
                         variant="outline" 
@@ -1224,10 +1235,11 @@ const OfferManagement = () => {
                           handleCloseAnalyticsModal();
                           fetchOffers();
                         }}
-                        className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                        className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white text-sm"
                       >
                         <RefreshCw className="h-4 w-4 mr-1" />
-                        Refresh
+                        <span className="hidden sm:inline">Refresh</span>
+                        <span className="sm:hidden">Refresh</span>
                       </Button>
                     </div>
                   </div>
@@ -1236,7 +1248,7 @@ const OfferManagement = () => {
                 <div className="text-center py-12">
                   <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No Analytics Data</h3>
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 text-sm">
                     Unable to load analytics data. Please try again.
                   </p>
                 </div>
@@ -1265,7 +1277,7 @@ const OfferManagement = () => {
           }}
         >
           <div 
-            className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative"
+            className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative"
             onClick={(e) => e.stopPropagation()}
             style={{ 
               zIndex: 10000,
@@ -1279,11 +1291,11 @@ const OfferManagement = () => {
             }}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b">
               <div className="flex items-center space-x-3">
                 <Tag className="h-6 w-6 text-red-600" />
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">
                     Create New Offer
                   </h2>
                   <p className="text-sm text-gray-600">
@@ -1293,15 +1305,16 @@ const OfferManagement = () => {
               </div>
               <Button variant="outline" size="sm" onClick={handleCloseCreateModal} className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white">
                 <X className="h-4 w-4" />
+                <span className="sr-only">Close Create Offer</span>
               </Button>
             </div>
 
             {/* Modal Content */}
-            <div className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 {/* Basic Information */}
                 <div className="space-y-4">
-                  <h3 className="font-medium text-gray-900">Basic Information</h3>
+                  <h3 className="font-medium text-gray-900 text-sm sm:text-base">Basic Information</h3>
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1311,7 +1324,7 @@ const OfferManagement = () => {
                       type="text"
                       value={createForm.title}
                       onChange={(e) => setCreateForm({...createForm, title: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
                       placeholder="Enter offer title"
                     />
                   </div>
@@ -1324,7 +1337,7 @@ const OfferManagement = () => {
                       value={createForm.description}
                       onChange={(e) => setCreateForm({...createForm, description: e.target.value})}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
                       placeholder="Enter offer description"
                     />
                   </div>
@@ -1337,7 +1350,7 @@ const OfferManagement = () => {
                       type="text"
                       value={createForm.code}
                       onChange={(e) => setCreateForm({...createForm, code: e.target.value.toUpperCase()})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
                       placeholder="e.g., SUMMER20"
                     />
                   </div>
@@ -1349,7 +1362,7 @@ const OfferManagement = () => {
                     <select
                       value={createForm.type}
                       onChange={(e) => setCreateForm({...createForm, type: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
                     >
                       <option value="discount">Discount</option>
                       <option value="free_shipping">Free Shipping</option>
@@ -1372,7 +1385,7 @@ const OfferManagement = () => {
                             setCreateForm({...createForm, image: file});
                           }
                         }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
                       />
                       {createForm.image && (
                         <div className="flex items-center space-x-2">
@@ -1399,9 +1412,9 @@ const OfferManagement = () => {
 
                 {/* Discount Settings */}
                 <div className="space-y-4">
-                  <h3 className="font-medium text-gray-900">Discount Settings</h3>
+                  <h3 className="font-medium text-gray-900 text-sm sm:text-base">Discount Settings</h3>
                   
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Discount Value *
@@ -1410,7 +1423,7 @@ const OfferManagement = () => {
                         type="number"
                         value={createForm.discountValue}
                         onChange={(e) => setCreateForm({...createForm, discountValue: parseFloat(e.target.value) || 0})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
                         placeholder="0"
                       />
                     </div>
@@ -1422,7 +1435,7 @@ const OfferManagement = () => {
                       <select
                         value={createForm.discountType}
                         onChange={(e) => setCreateForm({...createForm, discountType: e.target.value as 'percentage' | 'fixed'})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
                       >
                         <option value="percentage">Percentage (%)</option>
                         <option value="fixed">Fixed Amount ($)</option>
@@ -1438,7 +1451,7 @@ const OfferManagement = () => {
                       type="number"
                       value={createForm.minimumOrderAmount}
                       onChange={(e) => setCreateForm({...createForm, minimumOrderAmount: parseFloat(e.target.value) || 0})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
                       placeholder="0"
                     />
                   </div>
@@ -1451,7 +1464,7 @@ const OfferManagement = () => {
                       type="number"
                       value={createForm.maximumDiscountAmount}
                       onChange={(e) => setCreateForm({...createForm, maximumDiscountAmount: parseFloat(e.target.value) || 0})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
                       placeholder="0 (no limit)"
                     />
                   </div>
@@ -1460,9 +1473,9 @@ const OfferManagement = () => {
 
               {/* Validity Period */}
               <div className="space-y-4">
-                <h3 className="font-medium text-gray-900">Validity Period</h3>
+                <h3 className="font-medium text-gray-900 text-sm sm:text-base">Validity Period</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Start Date *
@@ -1471,7 +1484,7 @@ const OfferManagement = () => {
                       type="date"
                       value={createForm.startDate}
                       onChange={(e) => setCreateForm({...createForm, startDate: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
                     />
                   </div>
 
@@ -1483,7 +1496,7 @@ const OfferManagement = () => {
                       type="date"
                       value={createForm.endDate}
                       onChange={(e) => setCreateForm({...createForm, endDate: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
                     />
                   </div>
                 </div>
@@ -1496,7 +1509,7 @@ const OfferManagement = () => {
                     type="number"
                     value={createForm.usageLimit}
                     onChange={(e) => setCreateForm({...createForm, usageLimit: parseInt(e.target.value) || 0})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
                     placeholder="0 (unlimited)"
                   />
                 </div>
@@ -1504,7 +1517,7 @@ const OfferManagement = () => {
 
               {/* Status */}
               <div className="space-y-4">
-                <h3 className="font-medium text-gray-900">Status</h3>
+                <h3 className="font-medium text-gray-900 text-sm sm:text-base">Status</h3>
                 
                 <div className="flex items-center space-x-2">
                   <input
@@ -1522,7 +1535,7 @@ const OfferManagement = () => {
 
               {/* Product Selection */}
               <div className="space-y-4">
-                <h3 className="font-medium text-gray-900">Applicable Products</h3>
+                <h3 className="font-medium text-gray-900 text-sm sm:text-base">Applicable Products</h3>
                 <p className="text-sm text-gray-600">
                   Select which products this offer applies to. Leave empty to apply to all products.
                 </p>
@@ -1530,7 +1543,7 @@ const OfferManagement = () => {
                 {productsLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <RefreshCw className="h-6 w-6 animate-spin text-red-600 mr-2" />
-                    <span className="text-gray-600">Loading products...</span>
+                    <span className="text-gray-600 text-sm">Loading products...</span>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -1544,19 +1557,19 @@ const OfferManagement = () => {
                           placeholder="Search products by name, category, or description..."
                           value={productSearchTerm}
                           onChange={(e) => setProductSearchTerm(e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
                         />
                       </div>
 
                       {/* Selection Controls */}
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div className="flex items-center space-x-2">
                           <span className="text-sm font-medium text-gray-700">
                             Selected: {selectedProducts.length} | 
                             Showing: {filteredProducts.length} of {products.length}
                           </span>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <button
                             type="button"
                             onClick={handleSelectAllVisible}
@@ -1610,7 +1623,7 @@ const OfferManagement = () => {
                           {productSearchTerm ? (
                             <div>
                               <Search className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                              <p className="text-gray-500">No products found for "{productSearchTerm}"</p>
+                              <p className="text-gray-500 text-sm">No products found for "{productSearchTerm}"</p>
                               <button
                                 type="button"
                                 onClick={() => setProductSearchTerm('')}
@@ -1620,7 +1633,7 @@ const OfferManagement = () => {
                               </button>
                             </div>
                           ) : (
-                            <p className="text-gray-500">No products available</p>
+                            <p className="text-gray-500 text-sm">No products available</p>
                           )}
                         </div>
                       ) : (
@@ -1666,18 +1679,18 @@ const OfferManagement = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-end space-x-3 p-6 border-t">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-end space-y-2 sm:space-y-0 sm:space-x-3 p-4 sm:p-6 border-t">
               <Button
                 variant="outline"
                 onClick={handleCloseCreateModal}
-                className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white text-sm w-full sm:w-auto"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleCreateOffer}
                 disabled={createLoading}
-                className="bg-red-600 hover:bg-red-700 text-white"
+                className="bg-red-600 hover:bg-red-700 text-white text-sm w-full sm:w-auto"
               >
                 {createLoading ? (
                   <>

@@ -23,26 +23,27 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-xl md:text-2xl font-bold">Welcome to Esperança de Amor</CardTitle>
-          <CardDescription className="text-sm md:text-base">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4 sm:p-6">
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader className="text-center pb-4 sm:pb-6">
+          <CardTitle className="text-xl sm:text-2xl font-bold">Welcome to Esperança de Amor</CardTitle>
+          <CardDescription className="text-sm sm:text-base mt-2">
             Log in to access your account and start shopping
           </CardDescription>
         </CardHeader>
         
-        <CardContent className="space-y-4 md:space-y-6">
+        <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6 pb-6">
           <GoogleAuth 
             onSuccess={handleGoogleSuccess}
             onError={handleGoogleError}
+            className="w-full"
           />
           
-          <div className="text-center">
+          <div className="text-center pt-2">
             <Button 
               variant="link" 
               onClick={() => navigate('/')}
-              className="text-muted-foreground text-sm md:text-base"
+              className="text-muted-foreground text-sm sm:text-base hover:text-primary"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Home

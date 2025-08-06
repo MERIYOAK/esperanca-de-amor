@@ -31,7 +31,9 @@ import {
   XCircle,
   AlertCircle,
   TrendingUp,
-  MessageSquare
+  MessageSquare,
+  User,
+  Phone
 } from 'lucide-react';
 
 interface NewsletterSubscriber {
@@ -48,6 +50,8 @@ interface NewsletterSubscriber {
   lastEmailSent?: string;
   createdAt: string;
   updatedAt: string;
+  phone?: string; // Added phone field
+  emailsSent?: number; // Added emailsSent field
 }
 
 interface NewsletterStats {
@@ -169,7 +173,7 @@ const NewsletterManagement = () => {
     }
   };
 
-  const handleToggleSubscriberStatus = async (subscriberId: string) => {
+  const handleToggleSubscriberStatus = async (subscriberId: string, currentStatus: boolean) => {
     try {
       const token = localStorage.getItem('adminToken');
       
@@ -180,7 +184,7 @@ const NewsletterManagement = () => {
       }
       
       // Toggle the status
-      const newStatus = !currentSubscriber.isActive;
+      const newStatus = !currentStatus;
       
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/newsletter/subscribers/${subscriberId}/status`, {
         method: 'PATCH',
@@ -212,8 +216,8 @@ const NewsletterManagement = () => {
     }
   };
 
-  const handleDeleteSubscriber = async (subscriberId: string) => {
-    if (!confirm('Are you sure you want to delete this subscriber?')) {
+  const handleDeleteSubscriber = async (subscriberId: string, name?: string) => {
+    if (!confirm(`Are you sure you want to delete subscriber${name ? ` "${name}"` : ''}?`)) {
       return;
     }
 
@@ -493,44 +497,73 @@ const NewsletterManagement = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Newsletter Management</h1>
-          <p className="text-gray-600">Manage newsletter subscribers and send updates</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Newsletter Management</h2>
+          <p className="text-sm text-gray-600">Manage newsletter subscribers and send campaigns</p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleViewAnalytics}
-            disabled={analyticsLoading}
-          >
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Analytics
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleExportSubscribers}
-          >
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+          <Button variant="outline" size="sm" className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white w-full sm:w-auto" onClick={handleExportSubscribers}>
             <Download className="h-4 w-4 mr-2" />
-            Export
+            <span className="hidden sm:inline">Export Subscribers</span>
+            <span className="sm:hidden">Export</span>
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => setShowSendNewsletterModal(true)}
-          >
+          <Button className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto" onClick={() => setShowSendNewsletterModal(true)}>
             <Send className="h-4 w-4 mr-2" />
-            Send Newsletter
-          </Button>
-          <Button
-            onClick={() => setShowCreateModal(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Subscriber
+            <span className="hidden sm:inline">Send Newsletter</span>
+            <span className="sm:hidden">Send</span>
           </Button>
         </div>
       </div>
+
+      {/* Filters and Search */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center text-base sm:text-lg">
+            <Filter className="h-5 w-5 mr-2" />
+            Filters & Search
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search subscribers..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 text-sm"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="text-sm">
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm('');
+                  setStatusFilter('all');
+                  setCurrentPage(1);
+                }}
+                className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white text-sm w-full sm:w-auto"
+              >
+                Clear Filters
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -593,204 +626,151 @@ const NewsletterManagement = () => {
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Filter className="h-5 w-5 mr-2" />
-            Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="search">Search</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  id="search"
-                  placeholder="Search subscribers..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  <SelectItem value="true">Active</SelectItem>
-                  <SelectItem value="false">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Subscribers List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Subscribers</CardTitle>
-          <CardDescription>
-            Manage your newsletter subscribers
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Bulk Actions Header */}
-          {subscribers.length > 0 && (
-            <div className="flex items-center justify-between mb-4 p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedSubscribers.length === subscribers.length && subscribers.length > 0}
-                    onChange={handleSelectAllSubscribers}
-                    className="h-4 w-4 text-blue-600 border-blue-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700">
-                    Select All ({subscribers.length})
-                  </span>
-                </div>
-                {selectedSubscribers.length > 0 && (
-                  <span className="text-sm text-blue-600 font-medium">
-                    {selectedSubscribers.length} selected
-                  </span>
-                )}
-              </div>
-              {selectedSubscribers.length > 0 && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleBulkDeleteSubscribers}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Selected ({selectedSubscribers.length})
-                </Button>
-              )}
-            </div>
-          )}
-
-          {subscribers.length === 0 ? (
-            <div className="text-center py-12">
-              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No subscribers found</h3>
-              <p className="text-gray-600">Add your first subscriber to get started</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {subscribers.map((subscriber) => (
-                <div
-                  key={subscriber._id}
-                  className="border rounded-lg p-4 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-gray-900">{subscriber.email}</h3>
-                        <Badge className={getStatusColor(subscriber.isActive)}>
-                          {subscriber.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                        {subscriber.name && (
-                          <span className="text-sm text-gray-600">({subscriber.name})</span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-4 text-xs text-gray-500">
-                        <span className="flex items-center">
-                          <Calendar className="h-3 w-3 mr-1" />
-                          {formatDate(subscriber.createdAt)}
-                        </span>
-                        <span className="flex items-center">
-                          <Mail className="h-3 w-3 mr-1" />
-                          {subscriber.emailCount} emails sent
-                        </span>
-                        {subscriber.lastEmailSent && (
-                          <span className="flex items-center">
-                            <Activity className="h-3 w-3 mr-1" />
-                            Last: {formatDate(subscriber.lastEmailSent)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 ml-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedSubscribers.includes(subscriber._id)}
-                        onChange={() => handleSelectSubscriber(subscriber._id)}
-                        className="h-4 w-4 text-blue-600 border-blue-300 rounded focus:ring-blue-500"
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleViewSubscriberDetails(subscriber._id)}
-                        className="flex items-center space-x-1"
-                      >
-                        <Eye className="h-4 w-4" />
-                        <span className="text-xs">View</span>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleToggleSubscriberStatus(subscriber._id)}
-                        className="flex items-center space-x-1"
-                      >
-                        {subscriber.isActive ? (
-                          <>
-                            <XCircle className="h-4 w-4 text-red-600" />
-                            <span className="text-xs text-red-600">Deactivate</span>
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                            <span className="text-xs text-green-600">Activate</span>
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteSubscriber(subscriber._id)}
-                        className="text-red-600 hover:text-red-700 flex items-center space-x-1"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="text-xs">Delete</span>
-                      </Button>
+      <div className="space-y-4">
+        {subscribers.map((subscriber) => (
+          <Card key={subscriber._id} className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Mail className="h-5 w-5 text-red-600" />
+                    <div>
+                      <CardTitle className="text-base sm:text-lg">{subscriber.name}</CardTitle>
+                      <CardDescription className="text-sm">{subscriber.email}</CardDescription>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                <div className="flex items-center space-x-2">
+                  <Badge variant={subscriber.isActive ? "default" : "secondary"} className="text-xs">
+                    {subscriber.isActive ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="space-y-4">
+              {/* Subscriber Info */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <h4 className="font-medium text-gray-900 flex items-center text-sm">
+                    <User className="h-4 w-4 mr-2" />
+                    Subscriber Information
+                  </h4>
+                  <div className="space-y-1 text-sm">
+                    <p className="flex items-center">
+                      <span className="font-medium">Name:</span>
+                      <span className="ml-2">{subscriber.name}</span>
+                    </p>
+                    <p className="flex items-center">
+                      <Mail className="h-4 w-4 mr-2" />
+                      {subscriber.email}
+                    </p>
+                    {subscriber.phone && (
+                      <p className="flex items-center">
+                        <Phone className="h-4 w-4 mr-2" />
+                        {subscriber.phone}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="font-medium text-gray-900 flex items-center text-sm">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Subscription Details
+                  </h4>
+                  <div className="text-sm space-y-1">
+                    <p>Subscribed: {new Date(subscriber.createdAt).toLocaleDateString()}</p>
+                    {subscriber.lastEmailSent && (
+                      <p>Last Email: {new Date(subscriber.lastEmailSent).toLocaleDateString()}</p>
+                    )}
+                    <p>Emails Sent: {subscriber.emailCount || 0}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between pt-4 border-t gap-4">
+                <div className="flex items-center space-x-2">
+                  <Badge variant="outline" className="text-xs">
+                    <Mail className="h-3 w-3 mr-1" />
+                    Newsletter Subscriber
+                  </Badge>
+                </div>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleToggleSubscriberStatus(subscriber._id, subscriber.isActive)}
+                    className={`text-sm w-full sm:w-auto ${
+                      subscriber.isActive 
+                        ? 'text-orange-600 border-orange-600 hover:bg-orange-600 hover:text-white' 
+                        : 'text-green-600 border-green-600 hover:bg-green-600 hover:text-white'
+                    }`}
+                  >
+                    <span className="hidden sm:inline">{subscriber.isActive ? 'Deactivate' : 'Activate'}</span>
+                    <span className="sm:hidden">{subscriber.isActive ? 'Deactivate' : 'Activate'}</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeleteSubscriber(subscriber._id, subscriber.name)}
+                    className="text-red-600 border-red-600 hover:bg-red-600 hover:text-white text-sm w-full sm:w-auto"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    <span className="hidden sm:inline">Delete</span>
+                    <span className="sm:hidden">Delete</span>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center">
-          <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-gray-600 text-center sm:text-left">
+            Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, totalSubscribers)} of {totalSubscribers} subscribers
+          </p>
+          <div className="flex items-center space-x-2">
             <Button
               variant="outline"
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
+              className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               Previous
             </Button>
-            <span className="flex items-center px-4 py-2 text-sm">
+            <span className="text-sm text-gray-600">
               Page {currentPage} of {totalPages}
             </span>
             <Button
               variant="outline"
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
+              className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               Next
             </Button>
           </div>
+        </div>
+      )}
+
+      {subscribers.length === 0 && !loading && (
+        <div className="text-center py-8 sm:py-12">
+          <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No Subscribers Found</h3>
+          <p className="text-sm text-gray-600">
+            {searchTerm || statusFilter !== 'all'
+              ? "Try adjusting your search or filter criteria"
+              : "No newsletter subscribers yet"
+            }
+          </p>
         </div>
       )}
 
@@ -933,6 +913,9 @@ const NewsletterManagement = () => {
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-4">
+              <div className="text-xs text-gray-500 mb-2 sm:mb-0">
+                {!createForm.email && <div>Email is required</div>}
+              </div>
               <Button
                 variant="outline"
                 onClick={() => setShowCreateModal(false)}
@@ -940,8 +923,13 @@ const NewsletterManagement = () => {
                 Cancel
               </Button>
               <Button
-                onClick={handleCreateSubscriber}
-                disabled={createLoading || !createForm.email}
+                onClick={() => {
+                  console.log('Add Subscriber button clicked');
+                  console.log('Form state:', createForm);
+                  console.log('createLoading:', createLoading);
+                  handleCreateSubscriber();
+                }}
+                disabled={createLoading}
               >
                 {createLoading ? (
                   <>
@@ -1015,6 +1003,10 @@ const NewsletterManagement = () => {
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-4">
+              <div className="text-xs text-gray-500 mb-2 sm:mb-0">
+                {!newsletterForm.subject && <div>Subject is required</div>}
+                {!newsletterForm.content && <div>Content is required</div>}
+              </div>
               <Button
                 variant="outline"
                 onClick={() => setShowSendNewsletterModal(false)}
@@ -1022,8 +1014,13 @@ const NewsletterManagement = () => {
                 Cancel
               </Button>
               <Button
-                onClick={handleSendNewsletter}
-                disabled={sendLoading || !newsletterForm.subject || !newsletterForm.content}
+                onClick={() => {
+                  console.log('Send Newsletter button clicked');
+                  console.log('Newsletter form state:', newsletterForm);
+                  console.log('sendLoading:', sendLoading);
+                  handleSendNewsletter();
+                }}
+                disabled={sendLoading}
               >
                 {sendLoading ? (
                   <>

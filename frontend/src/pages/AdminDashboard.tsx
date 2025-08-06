@@ -23,7 +23,9 @@ import {
   Tag,
   MessageSquare,
   Database,
-  UserCheck
+  UserCheck,
+  Menu,
+  X
 } from 'lucide-react';
 import ProductManagement from './admin/ProductManagement';
 import OrderManagement from './admin/OrderManagement';
@@ -55,7 +57,8 @@ interface DashboardStats {
 const AdminDashboard = () => {
   const [adminData, setAdminData] = useState<AdminData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed on mobile
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('overview');
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -98,6 +101,21 @@ const AdminDashboard = () => {
     }
   }, [navigate, toast]);
 
+  // Auto-close mobile menu when screen size changes
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setMobileMenuOpen(false);
+        setSidebarOpen(true);
+      } else {
+        setSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
     localStorage.removeItem('adminData');
@@ -121,17 +139,22 @@ const AdminDashboard = () => {
     { id: 'settings', label: 'Settings', icon: Settings, color: 'text-gray-600' },
   ];
 
+  const handleNavigation = (sectionId: string) => {
+    setActiveSection(sectionId);
+    setMobileMenuOpen(false); // Close mobile menu when navigating
+  };
+
   const renderOverview = () => (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Users</CardTitle>
             <Users className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalUsers.toLocaleString()}</div>
+            <div className="text-xl sm:text-2xl font-bold">{stats.totalUsers.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               +12% from last month
             </p>
@@ -144,7 +167,7 @@ const AdminDashboard = () => {
             <Package className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalProducts}</div>
+            <div className="text-xl sm:text-2xl font-bold">{stats.totalProducts}</div>
             <p className="text-xs text-muted-foreground">
               +3 new this week
             </p>
@@ -157,7 +180,7 @@ const AdminDashboard = () => {
             <ShoppingCart className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalOrders}</div>
+            <div className="text-xl sm:text-2xl font-bold">{stats.totalOrders}</div>
             <p className="text-xs text-muted-foreground">
               {stats.pendingOrders} pending
             </p>
@@ -170,7 +193,7 @@ const AdminDashboard = () => {
             <DollarSign className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.totalRevenue.toLocaleString()}</div>
+            <div className="text-xl sm:text-2xl font-bold">${stats.totalRevenue.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               +8.1% from last month
             </p>
@@ -179,20 +202,20 @@ const AdminDashboard = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer border-2 border-transparent hover:border-blue-200">
           <CardHeader>
-            <CardTitle className="flex items-center text-lg">
+            <CardTitle className="flex items-center text-base sm:text-lg">
               <Package className="h-5 w-5 mr-2 text-blue-600" />
               Manage Products
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-sm">
               Add, edit, or remove products from your store
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button 
-              className="w-full" 
+              className="w-full text-sm" 
               variant="outline"
               onClick={() => setActiveSection('products')}
             >
@@ -203,17 +226,17 @@ const AdminDashboard = () => {
 
         <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer border-2 border-transparent hover:border-orange-200">
           <CardHeader>
-            <CardTitle className="flex items-center text-lg">
+            <CardTitle className="flex items-center text-base sm:text-lg">
               <ShoppingCart className="h-5 w-5 mr-2 text-orange-600" />
-              Process Orders
+              Manage Orders
             </CardTitle>
-            <CardDescription>
-              View and process customer orders
+            <CardDescription className="text-sm">
+              Track and manage customer orders
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button 
-              className="w-full" 
+              className="w-full text-sm" 
               variant="outline"
               onClick={() => setActiveSection('orders')}
             >
@@ -224,21 +247,84 @@ const AdminDashboard = () => {
 
         <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer border-2 border-transparent hover:border-purple-200">
           <CardHeader>
-            <CardTitle className="flex items-center text-lg">
+            <CardTitle className="flex items-center text-base sm:text-lg">
               <Users className="h-5 w-5 mr-2 text-purple-600" />
-              Customer Management
+              Manage Customers
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-sm">
               View and manage customer accounts
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button 
-              className="w-full" 
+              className="w-full text-sm" 
               variant="outline"
               onClick={() => setActiveSection('customers')}
             >
               View Customers
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer border-2 border-transparent hover:border-red-200">
+          <CardHeader>
+            <CardTitle className="flex items-center text-base sm:text-lg">
+              <BarChart3 className="h-5 w-5 mr-2 text-red-600" />
+              View Analytics
+            </CardTitle>
+            <CardDescription className="text-sm">
+              Monitor your business performance
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              className="w-full text-sm" 
+              variant="outline"
+              onClick={() => setActiveSection('analytics')}
+            >
+              View Analytics
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer border-2 border-transparent hover:border-indigo-200">
+          <CardHeader>
+            <CardTitle className="flex items-center text-base sm:text-lg">
+              <Tag className="h-5 w-5 mr-2 text-indigo-600" />
+              Manage Offers
+            </CardTitle>
+            <CardDescription className="text-sm">
+              Create and manage promotional offers
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              className="w-full text-sm" 
+              variant="outline"
+              onClick={() => setActiveSection('offers')}
+            >
+              View Offers
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer border-2 border-transparent hover:border-yellow-200">
+          <CardHeader>
+            <CardTitle className="flex items-center text-base sm:text-lg">
+              <Bell className="h-5 w-5 mr-2 text-yellow-600" />
+              Announcements
+            </CardTitle>
+            <CardDescription className="text-sm">
+              Manage site announcements
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              className="w-full text-sm" 
+              variant="outline"
+              onClick={() => setActiveSection('announcements')}
+            >
+              View Announcements
             </Button>
           </CardContent>
         </Card>
@@ -247,40 +333,28 @@ const AdminDashboard = () => {
       {/* Recent Activity */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Activity className="h-5 w-5 mr-2 text-gray-600" />
-            Recent Activity
-          </CardTitle>
-          <CardDescription>
-            Latest actions and updates in your store
-          </CardDescription>
+          <CardTitle className="text-lg">Recent Activity</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center space-x-4 p-3 bg-green-50 rounded-lg">
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <div className="flex-1">
+              <div>
                 <p className="text-sm font-medium">New order received</p>
-                <p className="text-xs text-gray-500">Order #1234 from John Doe - $89.99</p>
+                <p className="text-xs text-gray-500">Order #1234 from John Doe</p>
               </div>
-              <span className="text-xs text-gray-500">2 minutes ago</span>
             </div>
-            <div className="flex items-center space-x-4 p-3 bg-blue-50 rounded-lg">
+            <span className="text-xs text-gray-500">2 hours ago</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm font-medium">New user registered</p>
-                <p className="text-xs text-gray-500">jane.smith@example.com</p>
-              </div>
-              <span className="text-xs text-gray-500">15 minutes ago</span>
-            </div>
-            <div className="flex items-center space-x-4 p-3 bg-yellow-50 rounded-lg">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-              <div className="flex-1">
+              <div>
                 <p className="text-sm font-medium">Product updated</p>
                 <p className="text-xs text-gray-500">Fresh Avocados price updated to $2.99</p>
               </div>
-              <span className="text-xs text-gray-500">1 hour ago</span>
             </div>
+            <span className="text-xs text-gray-500">1 hour ago</span>
           </div>
         </CardContent>
       </Card>
@@ -288,43 +362,90 @@ const AdminDashboard = () => {
   );
 
   const renderSidebar = () => (
-    <div className={`bg-white border-r border-gray-200 h-screen ${sidebarOpen ? 'w-64' : 'w-16'} transition-all duration-300`}>
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-6">
-          <div className={`flex items-center ${sidebarOpen ? 'w-full' : 'justify-center'}`}>
-            <Shield className="h-8 w-8 text-red-600" />
-            {sidebarOpen && (
-              <span className="ml-2 text-lg font-semibold text-gray-900">Admin</span>
-            )}
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="hidden md:block"
-          >
-            <ChevronRight className={`h-4 w-4 transition-transform ${sidebarOpen ? 'rotate-180' : ''}`} />
-          </Button>
-        </div>
+    <>
+      {/* Mobile Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
 
-        <nav className="space-y-2">
-          {navigationItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Button
-                key={item.id}
-                variant={activeSection === item.id ? "default" : "ghost"}
-                className={`w-full justify-start ${sidebarOpen ? 'px-4' : 'px-2'} ${activeSection === item.id ? 'bg-red-600 text-white' : 'hover:bg-gray-100'}`}
-                onClick={() => setActiveSection(item.id)}
-              >
-                <Icon className={`h-4 w-4 ${sidebarOpen ? 'mr-3' : 'mx-auto'} ${activeSection === item.id ? 'text-white' : item.color}`} />
-                {sidebarOpen && <span>{item.label}</span>}
-              </Button>
-            );
-          })}
-        </nav>
+      {/* Sidebar */}
+      <div className={`
+        fixed md:relative z-50 h-screen bg-white border-r border-gray-200 
+        ${mobileMenuOpen ? 'w-64' : 'w-0 md:w-64'} 
+        ${sidebarOpen ? 'w-64' : 'w-16'} 
+        transition-all duration-300 ease-in-out
+        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        <div className="p-4 h-full flex flex-col">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className={`flex items-center ${sidebarOpen || mobileMenuOpen ? 'w-full' : 'justify-center'}`}>
+              <Shield className="h-8 w-8 text-red-600" />
+              {(sidebarOpen || mobileMenuOpen) && (
+                <span className="ml-2 text-lg font-semibold text-gray-900">Admin</span>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="hidden md:block"
+            >
+              <ChevronRight className={`h-4 w-4 transition-transform ${sidebarOpen ? 'rotate-180' : ''}`} />
+              <span className="sr-only">Toggle Sidebar</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`md:hidden ${mobileMenuOpen ? 'block' : 'hidden'}`}
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close Menu</span>
+            </Button>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 space-y-2">
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Button
+                  key={item.id}
+                  variant={activeSection === item.id ? "default" : "ghost"}
+                  className={`w-full justify-start ${sidebarOpen || mobileMenuOpen ? 'px-4' : 'px-2'} ${activeSection === item.id ? 'bg-red-600 text-white' : 'hover:bg-gray-100'}`}
+                  onClick={() => handleNavigation(item.id)}
+                >
+                  <Icon className={`h-4 w-4 ${sidebarOpen || mobileMenuOpen ? 'mr-3' : 'mx-auto'} ${activeSection === item.id ? 'text-white' : item.color}`} />
+                  {(sidebarOpen || mobileMenuOpen) && <span className="text-sm">{item.label}</span>}
+                  {!sidebarOpen && !mobileMenuOpen && (
+                    <span className="sr-only">{item.label}</span>
+                  )}
+                </Button>
+              );
+            })}
+          </nav>
+
+          {/* Admin Info */}
+          {(sidebarOpen || mobileMenuOpen) && adminData && (
+            <div className="mt-auto pt-4 border-t border-gray-200">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                  <UserCheck className="h-4 w-4 text-red-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{adminData.name}</p>
+                  <p className="text-xs text-gray-500 truncate">{adminData.email}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 
   if (isLoading) {
@@ -351,28 +472,43 @@ const AdminDashboard = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="px-6 py-4">
+          <div className="px-4 sm:px-6 py-4">
             <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 capitalize">
-                  {activeSection}
-                </h1>
-                <p className="text-sm text-gray-600">
-                  Welcome back, {adminData.name}
-                </p>
-              </div>
               <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                {/* Mobile Menu Button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setMobileMenuOpen(true)}
+                  className="md:hidden"
+                >
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Open Menu</span>
+                </Button>
+
+                <div>
+                  <h1 className="text-lg sm:text-2xl font-bold text-gray-900 capitalize">
+                    {activeSection}
+                  </h1>
+                  <p className="text-xs sm:text-sm text-gray-600">
+                    Welcome back, {adminData.name}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2 sm:space-x-4">
+                <div className="hidden sm:flex items-center space-x-2 text-sm text-gray-600">
                   <Calendar className="h-4 w-4" />
                   <span>{new Date().toLocaleDateString()}</span>
                 </div>
                 <Button
                   variant="outline"
                   onClick={handleLogout}
-                  className="text-red-600 border-red-600 hover:bg-red-600 hover:text-white"
+                  className="text-red-600 border-red-600 hover:bg-red-600 hover:text-white text-sm flex items-center space-x-2"
                 >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
+                  <LogOut className="h-4 w-4" />
+                  <span className="text-sm font-medium">Logout</span>
+                  <span className="sr-only">Logout from admin dashboard</span>
                 </Button>
               </div>
             </div>
@@ -380,7 +516,7 @@ const AdminDashboard = () => {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           {activeSection === 'overview' && renderOverview()}
           {activeSection === 'products' && <ProductManagement />}
           {activeSection === 'orders' && <OrderManagement />}

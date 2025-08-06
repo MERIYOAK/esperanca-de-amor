@@ -469,96 +469,97 @@ const SettingsManagement = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600">Manage your account and system preferences</p>
+      <div className="px-2 sm:px-0">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Settings</h2>
+        <p className="text-sm text-gray-600">Manage your account and system preferences</p>
       </div>
 
       {/* Settings Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="profile" className="flex items-center space-x-2">
-            <User className="h-4 w-4" />
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-1 sm:gap-2 h-auto sm:h-10">
+          <TabsTrigger value="profile" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 text-xs sm:text-sm h-auto py-2 sm:py-0">
+            <User className="h-3 w-3 sm:h-4 sm:w-4" />
             <span>Profile</span>
           </TabsTrigger>
-          <TabsTrigger value="security" className="flex items-center space-x-2">
-            <Shield className="h-4 w-4" />
+          <TabsTrigger value="security" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 text-xs sm:text-sm h-auto py-2 sm:py-0">
+            <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
             <span>Security</span>
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center space-x-2">
-            <Bell className="h-4 w-4" />
+          <TabsTrigger value="notifications" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 text-xs sm:text-sm h-auto py-2 sm:py-0">
+            <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
             <span>Notifications</span>
           </TabsTrigger>
-          <TabsTrigger value="system" className="flex items-center space-x-2">
-            <Settings className="h-4 w-4" />
+          <TabsTrigger value="system" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 text-xs sm:text-sm h-auto py-2 sm:py-0">
+            <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
             <span>System</span>
           </TabsTrigger>
-          <TabsTrigger value="email" className="flex items-center space-x-2">
-            <Mail className="h-4 w-4" />
+          <TabsTrigger value="email" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 text-xs sm:text-sm h-auto py-2 sm:py-0">
+            <Mail className="h-3 w-3 sm:h-4 sm:w-4" />
             <span>Email</span>
           </TabsTrigger>
         </TabsList>
 
         {/* Profile Settings */}
-        <TabsContent value="profile" className="space-y-6">
+        <TabsContent value="profile" className="space-y-4 sm:space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
+            <CardHeader className="pb-4 sm:pb-6">
+              <CardTitle className="flex items-center text-lg sm:text-xl">
                 <User className="h-5 w-5 mr-2" />
                 Profile Settings
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Update your personal information and account details
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent className="space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-1 gap-4 sm:gap-6">
                 <div>
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="name" className="text-sm">Full Name</Label>
                   <Input
                     id="name"
                     value={profileForm.name}
                     onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
                     placeholder="Enter your full name"
+                    className="text-sm mt-1"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="email">Email Address</Label>
+                  <Label htmlFor="email" className="text-sm">Email Address</Label>
                   <Input
                     id="email"
                     value={profileForm.email}
                     disabled
-                    className="bg-gray-50"
+                    className="bg-gray-50 text-sm mt-1"
                   />
                   <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 <div>
-                  <Label>Role</Label>
-                  <Input value={settings.profile.role} disabled className="bg-gray-50" />
+                  <Label className="text-sm">Role</Label>
+                  <Input value={settings.profile.role} disabled className="bg-gray-50 text-sm mt-1" />
                 </div>
                 <div>
-                  <Label>Status</Label>
-                  <div className="flex items-center space-x-2">
-                    <Badge variant={settings.profile.isActive ? "default" : "secondary"}>
+                  <Label className="text-sm">Status</Label>
+                  <div className="flex items-center space-x-2 mt-1">
+                    <Badge variant={settings.profile.isActive ? "default" : "secondary"} className="text-xs">
                       {settings.profile.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </div>
                 </div>
                 <div>
-                  <Label>Last Login</Label>
-                  <Input value={new Date(settings.profile.lastLogin).toLocaleString()} disabled className="bg-gray-50" />
+                  <Label className="text-sm">Last Login</Label>
+                  <Input value={new Date(settings.profile.lastLogin).toLocaleString()} disabled className="bg-gray-50 text-sm mt-1" />
                 </div>
               </div>
 
               <Button 
                 onClick={handleProfileUpdate}
                 disabled={saving === 'profile'}
-                className="w-full md:w-auto"
+                className="w-full sm:w-auto text-sm"
               >
                 {saving === 'profile' ? (
                   <>
@@ -577,28 +578,29 @@ const SettingsManagement = () => {
         </TabsContent>
 
         {/* Security Settings */}
-        <TabsContent value="security" className="space-y-6">
+        <TabsContent value="security" className="space-y-4 sm:space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
+            <CardHeader className="pb-4 sm:pb-6">
+              <CardTitle className="flex items-center text-lg sm:text-xl">
                 <Shield className="h-5 w-5 mr-2" />
                 Security Settings
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Manage your password and security preferences
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent className="space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-1 gap-4 sm:gap-6">
                 <div>
-                  <Label htmlFor="currentPassword">Current Password</Label>
-                  <div className="relative">
+                  <Label htmlFor="currentPassword" className="text-sm">Current Password</Label>
+                  <div className="relative mt-1">
                     <Input
                       id="currentPassword"
                       type={showPassword ? "text" : "password"}
                       value={securityForm.currentPassword}
                       onChange={(e) => setSecurityForm({ ...securityForm, currentPassword: e.target.value })}
                       placeholder="Enter current password"
+                      className="text-sm pr-10"
                     />
                     <Button
                       type="button"
@@ -608,34 +610,37 @@ const SettingsManagement = () => {
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      <span className="sr-only">{showPassword ? 'Hide Password' : 'Show Password'}</span>
                     </Button>
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="newPassword">New Password</Label>
+                  <Label htmlFor="newPassword" className="text-sm">New Password</Label>
                   <Input
                     id="newPassword"
                     type="password"
                     value={securityForm.newPassword}
                     onChange={(e) => setSecurityForm({ ...securityForm, newPassword: e.target.value })}
                     placeholder="Enter new password"
+                    className="text-sm mt-1"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div>
-                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <Label htmlFor="confirmPassword" className="text-sm">Confirm New Password</Label>
                   <Input
                     id="confirmPassword"
                     type="password"
                     value={securityForm.confirmPassword}
                     onChange={(e) => setSecurityForm({ ...securityForm, confirmPassword: e.target.value })}
                     placeholder="Confirm new password"
+                    className="text-sm mt-1"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
+                  <Label htmlFor="sessionTimeout" className="text-sm">Session Timeout (minutes)</Label>
                   <Input
                     id="sessionTimeout"
                     type="number"
@@ -643,6 +648,7 @@ const SettingsManagement = () => {
                     onChange={(e) => setSecurityForm({ ...securityForm, sessionTimeout: parseInt(e.target.value) })}
                     min="5"
                     max="480"
+                    className="text-sm mt-1"
                   />
                 </div>
               </div>
@@ -653,24 +659,24 @@ const SettingsManagement = () => {
                   checked={securityForm.twoFactorEnabled}
                   onCheckedChange={(checked) => setSecurityForm({ ...securityForm, twoFactorEnabled: checked })}
                 />
-                <Label htmlFor="twoFactor">Enable Two-Factor Authentication</Label>
+                <Label htmlFor="twoFactor" className="text-sm">Enable Two-Factor Authentication</Label>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div>
-                  <Label>Password Last Changed</Label>
-                  <Input value={new Date(settings.security.passwordLastChanged).toLocaleDateString()} disabled className="bg-gray-50" />
+                  <Label className="text-sm">Password Last Changed</Label>
+                  <Input value={new Date(settings.security.passwordLastChanged).toLocaleDateString()} disabled className="bg-gray-50 text-sm mt-1" />
                 </div>
                 <div>
-                  <Label>Login Attempts</Label>
-                  <Input value={settings.security.loginAttempts} disabled className="bg-gray-50" />
+                  <Label className="text-sm">Login Attempts</Label>
+                  <Input value={settings.security.loginAttempts} disabled className="bg-gray-50 text-sm mt-1" />
                 </div>
               </div>
 
               <Button 
                 onClick={handleSecurityUpdate}
                 disabled={saving === 'security'}
-                className="w-full md:w-auto"
+                className="w-full sm:w-auto text-sm"
               >
                 {saving === 'security' ? (
                   <>
@@ -680,7 +686,7 @@ const SettingsManagement = () => {
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Update Security
+                    Save Changes
                   </>
                 )}
               </Button>
@@ -689,23 +695,23 @@ const SettingsManagement = () => {
         </TabsContent>
 
         {/* Notification Settings */}
-        <TabsContent value="notifications" className="space-y-6">
+        <TabsContent value="notifications" className="space-y-4 sm:space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
+            <CardHeader className="pb-4 sm:pb-6">
+              <CardTitle className="flex items-center text-lg sm:text-xl">
                 <Bell className="h-5 w-5 mr-2" />
                 Notification Settings
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Configure how you receive notifications
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Email Notifications</Label>
-                    <p className="text-sm text-gray-500">Receive notifications via email</p>
+            <CardContent className="space-y-4 sm:space-y-6">
+              <div className="space-y-4 sm:space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                  <div className="flex-1">
+                    <Label className="text-sm">Email Notifications</Label>
+                    <p className="text-xs text-gray-500">Receive notifications via email</p>
                   </div>
                   <Switch
                     checked={notificationForm.emailNotifications}
@@ -715,10 +721,10 @@ const SettingsManagement = () => {
 
                 <Separator />
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Order Notifications</Label>
-                    <p className="text-sm text-gray-500">Get notified about new orders</p>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                  <div className="flex-1">
+                    <Label className="text-sm">Order Notifications</Label>
+                    <p className="text-xs text-gray-500">Get notified about new orders</p>
                   </div>
                   <Switch
                     checked={notificationForm.orderNotifications}
@@ -728,10 +734,10 @@ const SettingsManagement = () => {
 
                 <Separator />
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Newsletter Notifications</Label>
-                    <p className="text-sm text-gray-500">Receive newsletter updates</p>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                  <div className="flex-1">
+                    <Label className="text-sm">Newsletter Notifications</Label>
+                    <p className="text-xs text-gray-500">Receive newsletter updates</p>
                   </div>
                   <Switch
                     checked={notificationForm.newsletterNotifications}
@@ -741,10 +747,10 @@ const SettingsManagement = () => {
 
                 <Separator />
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>System Alerts</Label>
-                    <p className="text-sm text-gray-500">Important system notifications</p>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                  <div className="flex-1">
+                    <Label className="text-sm">System Alerts</Label>
+                    <p className="text-xs text-gray-500">Important system notifications</p>
                   </div>
                   <Switch
                     checked={notificationForm.systemAlerts}
@@ -756,7 +762,7 @@ const SettingsManagement = () => {
               <Button 
                 onClick={handleNotificationUpdate}
                 disabled={saving === 'notifications'}
-                className="w-full md:w-auto"
+                className="w-full sm:w-auto text-sm"
               >
                 {saving === 'notifications' ? (
                   <>
@@ -766,7 +772,7 @@ const SettingsManagement = () => {
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Save Notifications
+                    Save Changes
                   </>
                 )}
               </Button>
@@ -775,23 +781,23 @@ const SettingsManagement = () => {
         </TabsContent>
 
         {/* System Settings */}
-        <TabsContent value="system" className="space-y-6">
+        <TabsContent value="system" className="space-y-4 sm:space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
+            <CardHeader className="pb-4 sm:pb-6">
+              <CardTitle className="flex items-center text-lg sm:text-xl">
                 <Settings className="h-5 w-5 mr-2" />
                 System Settings
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Configure system-wide settings and preferences
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Maintenance Mode</Label>
-                    <p className="text-sm text-gray-500">Put the system in maintenance mode</p>
+            <CardContent className="space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-1 gap-4 sm:gap-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                  <div className="flex-1">
+                    <Label className="text-sm">Maintenance Mode</Label>
+                    <p className="text-xs text-gray-500">Put the system in maintenance mode</p>
                   </div>
                   <Switch
                     checked={systemForm.maintenanceMode}
@@ -799,10 +805,10 @@ const SettingsManagement = () => {
                   />
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Debug Mode</Label>
-                    <p className="text-sm text-gray-500">Enable debug logging</p>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                  <div className="flex-1">
+                    <Label className="text-sm">Debug Mode</Label>
+                    <p className="text-xs text-gray-500">Enable debug logging</p>
                   </div>
                   <Switch
                     checked={systemForm.debugMode}
@@ -813,11 +819,11 @@ const SettingsManagement = () => {
 
               <Separator />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Auto Backup</Label>
-                    <p className="text-sm text-gray-500">Automatically backup data</p>
+              <div className="grid grid-cols-1 gap-4 sm:gap-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                  <div className="flex-1">
+                    <Label className="text-sm">Auto Backup</Label>
+                    <p className="text-xs text-gray-500">Automatically backup data</p>
                   </div>
                   <Switch
                     checked={systemForm.autoBackup}
@@ -826,9 +832,9 @@ const SettingsManagement = () => {
                 </div>
 
                 <div>
-                  <Label>Backup Frequency</Label>
+                  <Label className="text-sm">Backup Frequency</Label>
                   <Select value={systemForm.backupFrequency} onValueChange={(value) => setSystemForm({ ...systemForm, backupFrequency: value })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="text-sm mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -842,23 +848,25 @@ const SettingsManagement = () => {
 
               <Separator />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div>
-                  <Label>Max File Size (MB)</Label>
+                  <Label className="text-sm">Max File Size (MB)</Label>
                   <Input
                     type="number"
                     value={systemForm.maxFileSize}
                     onChange={(e) => setSystemForm({ ...systemForm, maxFileSize: parseInt(e.target.value) })}
                     min="1"
                     max="100"
+                    className="text-sm mt-1"
                   />
                 </div>
                 <div>
-                  <Label>Allowed File Types</Label>
+                  <Label className="text-sm">Allowed File Types</Label>
                   <Input
                     value={systemForm.allowedFileTypes.join(', ')}
                     onChange={(e) => setSystemForm({ ...systemForm, allowedFileTypes: e.target.value.split(',').map(t => t.trim()) })}
                     placeholder="jpg, png, pdf, doc"
+                    className="text-sm mt-1"
                   />
                 </div>
               </div>
@@ -866,7 +874,7 @@ const SettingsManagement = () => {
               <Button 
                 onClick={handleSystemUpdate}
                 disabled={saving === 'system'}
-                className="w-full md:w-auto"
+                className="w-full sm:w-auto text-sm"
               >
                 {saving === 'system' ? (
                   <>
@@ -876,7 +884,7 @@ const SettingsManagement = () => {
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Save System Settings
+                    Save Changes
                   </>
                 )}
               </Button>
@@ -885,86 +893,92 @@ const SettingsManagement = () => {
         </TabsContent>
 
         {/* Email Settings */}
-        <TabsContent value="email" className="space-y-6">
+        <TabsContent value="email" className="space-y-4 sm:space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
+            <CardHeader className="pb-4 sm:pb-6">
+              <CardTitle className="flex items-center text-lg sm:text-xl">
                 <Mail className="h-5 w-5 mr-2" />
                 Email Configuration
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Configure email server settings for notifications and newsletters
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="mb-4 p-4 bg-blue-50 rounded-lg">
-                <h4 className="font-medium text-blue-900 mb-2">Email Configuration Help</h4>
-                <p className="text-sm text-blue-700">
+            <CardContent className="space-y-4 sm:space-y-6">
+              <div className="mb-4 p-3 sm:p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-medium text-blue-900 mb-2 text-sm sm:text-base">Email Configuration Help</h4>
+                <p className="text-xs sm:text-sm text-blue-700">
                   Configure your SMTP settings for sending newsletters and notifications. 
                   For Gmail, use smtp.gmail.com with port 587 and enable "Less secure app access" or use an App Password.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:gap-6">
                 <div>
-                  <Label>SMTP Host</Label>
+                  <Label className="text-sm">SMTP Host</Label>
                   <Input
                     value={emailForm.smtpHost}
                     onChange={(e) => setEmailForm({ ...emailForm, smtpHost: e.target.value })}
                     placeholder="smtp.gmail.com"
+                    className="text-sm mt-1"
                   />
                   <p className="text-xs text-gray-500 mt-1">e.g., smtp.gmail.com, smtp.outlook.com</p>
                 </div>
                 <div>
-                  <Label>SMTP Port</Label>
+                  <Label className="text-sm">SMTP Port</Label>
                   <Input
                     type="number"
                     value={emailForm.smtpPort}
                     onChange={(e) => setEmailForm({ ...emailForm, smtpPort: parseInt(e.target.value) })}
                     placeholder="587"
+                    className="text-sm mt-1"
                   />
                   <p className="text-xs text-gray-500 mt-1">Common ports: 587 (TLS), 465 (SSL), 25</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:gap-6">
                 <div>
-                  <Label>SMTP Username</Label>
+                  <Label className="text-sm">SMTP Username</Label>
                   <Input
                     value={emailForm.smtpUser}
                     onChange={(e) => setEmailForm({ ...emailForm, smtpUser: e.target.value })}
                     placeholder="your-email@gmail.com"
+                    className="text-sm mt-1"
                   />
                   <p className="text-xs text-gray-500 mt-1">Your email address</p>
                 </div>
                 <div>
-                  <Label>SMTP Password</Label>
+                  <Label className="text-sm">SMTP Password</Label>
                   <Input
                     type="password"
                     value={emailForm.smtpPassword}
                     onChange={(e) => setEmailForm({ ...emailForm, smtpPassword: e.target.value })}
                     placeholder="Enter SMTP password"
+                    className="text-sm mt-1"
                   />
                   <p className="text-xs text-gray-500 mt-1">Your email password or app password</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:gap-6">
                 <div>
-                  <Label>From Email</Label>
+                  <Label className="text-sm">From Email</Label>
                   <Input
                     value={emailForm.fromEmail}
                     onChange={(e) => setEmailForm({ ...emailForm, fromEmail: e.target.value })}
                     placeholder="noreply@yourdomain.com"
+                    className="text-sm mt-1"
                   />
                   <p className="text-xs text-gray-500 mt-1">Email address that appears as sender</p>
                 </div>
                 <div>
-                  <Label>From Name</Label>
+                  <Label className="text-sm">From Name</Label>
                   <Input
                     value={emailForm.fromName}
                     onChange={(e) => setEmailForm({ ...emailForm, fromName: e.target.value })}
                     placeholder="Your Store Name"
+                    className="text-sm mt-1"
                   />
                   <p className="text-xs text-gray-500 mt-1">Name that appears as sender</p>
                 </div>
@@ -972,17 +986,18 @@ const SettingsManagement = () => {
 
               <div className="flex items-center space-x-2">
                 <Switch
+                  id="smtpSecure"
                   checked={emailForm.smtpSecure}
                   onCheckedChange={(checked) => setEmailForm({ ...emailForm, smtpSecure: checked })}
                 />
-                <Label>Use Secure Connection (SSL/TLS)</Label>
+                <Label htmlFor="smtpSecure" className="text-sm">Use Secure Connection (SSL/TLS)</Label>
               </div>
-              <p className="text-xs text-gray-500">Enable for port 465, disable for port 587</p>
 
-              <div className="flex space-x-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button 
                   onClick={handleEmailUpdate}
                   disabled={saving === 'email'}
+                  className="w-full sm:w-auto text-sm"
                 >
                   {saving === 'email' ? (
                     <>
@@ -999,9 +1014,10 @@ const SettingsManagement = () => {
                 <Button 
                   variant="outline"
                   onClick={testEmailConfiguration}
+                  className="w-full sm:w-auto text-sm"
                 >
                   <Mail className="h-4 w-4 mr-2" />
-                  Test Configuration
+                  Test Email Configuration
                 </Button>
               </div>
             </CardContent>

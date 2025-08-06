@@ -474,23 +474,24 @@ const ProductManagement = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Product Management</h2>
-          <p className="text-gray-600">Manage your store's product catalog</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Product Management</h2>
+          <p className="text-sm text-gray-600">Manage your store's product catalog</p>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
           <div className="relative import-dropdown">
             <Button 
               variant="outline" 
               size="sm" 
-              className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+              className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white w-full sm:w-auto"
               onClick={() => setShowImportDropdown(!showImportDropdown)}
             >
               <Upload className="h-4 w-4 mr-2" />
-              Import
+              <span className="hidden sm:inline">Import</span>
+              <span className="sm:hidden">Import</span>
               <ChevronDown className="h-4 w-4 ml-1" />
             </Button>
             {showImportDropdown && (
@@ -519,18 +520,20 @@ const ProductManagement = () => {
           <Button 
             variant="outline" 
             size="sm" 
-            className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+            className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white w-full sm:w-auto"
             onClick={handleExportProducts}
           >
             <Download className="h-4 w-4 mr-2" />
-            Export
+            <span className="hidden sm:inline">Export</span>
+            <span className="sm:hidden">Export</span>
           </Button>
           <Button 
-            className="bg-red-600 hover:bg-red-700"
+            className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
             onClick={handleAddProduct}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Add Product
+            <span className="hidden sm:inline">Add Product</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         </div>
       </div>
@@ -538,26 +541,26 @@ const ProductManagement = () => {
       {/* Filters and Search */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
+          <CardTitle className="flex items-center text-base sm:text-lg">
             <Filter className="h-5 w-5 mr-2" />
             Filters & Search
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search products..."
                 value={searchTerm}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="pl-10"
+                className="pl-10 text-sm"
               />
             </div>
             <select
               value={selectedCategory}
               onChange={(e) => handleCategoryFilter(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
             >
               <option value="">All Categories</option>
               {categories.map((category) => (
@@ -566,15 +569,16 @@ const ProductManagement = () => {
                 </option>
               ))}
             </select>
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleSelectAll}
-                className={selectedProducts.length === products.length 
-                  ? 'bg-red-50 text-red-600 border-red-600' 
-                  : 'border-red-600 text-red-600 hover:bg-red-600 hover:text-white'
-                }
+                className={`w-full sm:w-auto text-sm ${
+                  selectedProducts.length === products.length 
+                    ? 'bg-red-50 text-red-600 border-red-600' 
+                    : 'border-red-600 text-red-600 hover:bg-red-600 hover:text-white'
+                }`}
               >
                 {selectedProducts.length === products.length ? 'Deselect All' : 'Select All'}
               </Button>
@@ -583,7 +587,7 @@ const ProductManagement = () => {
                   variant="destructive"
                   size="sm"
                   onClick={handleBulkDelete}
-                  className="bg-red-600 hover:bg-red-700"
+                  className="bg-red-600 hover:bg-red-700 w-full sm:w-auto text-sm"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete ({selectedProducts.length})
@@ -595,16 +599,16 @@ const ProductManagement = () => {
       </Card>
 
       {/* Products Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {products.map((product) => (
           <Card key={product._id} className="hover:shadow-lg transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <CardTitle className="text-lg font-semibold line-clamp-2">
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-base sm:text-lg font-semibold line-clamp-2">
                     {product.name}
                   </CardTitle>
-                  <CardDescription className="line-clamp-2 mt-1">
+                  <CardDescription className="line-clamp-2 mt-1 text-sm">
                     {product.description}
                   </CardDescription>
                 </div>
@@ -612,7 +616,7 @@ const ProductManagement = () => {
                   type="checkbox"
                   checked={selectedProducts.includes(product._id)}
                   onChange={() => handleProductSelection(product._id)}
-                  className="ml-2 h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                  className="ml-2 h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded flex-shrink-0"
                 />
               </div>
             </CardHeader>
@@ -628,7 +632,7 @@ const ProductManagement = () => {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <Package className="h-12 w-12 text-gray-400" />
+                    <Package className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400" />
                   </div>
                 )}
               </div>
@@ -636,27 +640,27 @@ const ProductManagement = () => {
               {/* Product Info */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold text-gray-900">
+                  <span className="text-base sm:text-lg font-bold text-gray-900">
                     ${product.price.toFixed(2)}
                   </span>
                   {product.originalPrice && product.originalPrice > product.price && (
-                    <span className="text-sm text-gray-500 line-through">
+                    <span className="text-xs sm:text-sm text-gray-500 line-through">
                       ${product.originalPrice.toFixed(2)}
                     </span>
                   )}
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Badge className={getCategoryColor(product.category)}>
+                  <Badge className={`${getCategoryColor(product.category)} text-xs`}>
                     {product.category}
                   </Badge>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-xs sm:text-sm text-gray-600">
                     Stock: {product.stock}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Badge variant={product.isActive ? "default" : "secondary"}>
+                  <Badge variant={product.isActive ? "default" : "secondary"} className="text-xs">
                     {product.isActive ? "Active" : "Inactive"}
                   </Badge>
                   <span className="text-xs text-gray-500">
@@ -666,34 +670,39 @@ const ProductManagement = () => {
               </div>
 
               {/* Actions */}
-              <div className="flex items-center space-x-2 pt-2 border-t">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 pt-2 border-t">
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="flex-1 border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
                   onClick={() => handleEditProduct(product)}
+                  className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white text-sm w-full sm:w-auto"
                 >
                   <Edit className="h-4 w-4 mr-1" />
-                  Edit
+                  <span className="hidden sm:inline">Edit</span>
+                  <span className="sm:hidden">Edit</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleToggleProductStatus(product._id, product.isActive)}
-                  className={product.isActive 
-                    ? 'text-orange-600 border-orange-600 hover:bg-orange-600 hover:text-white' 
-                    : 'text-green-600 border-green-600 hover:bg-green-600 hover:text-white'
-                  }
+                  className={`text-sm w-full sm:w-auto ${
+                    product.isActive 
+                      ? 'text-orange-600 border-orange-600 hover:bg-orange-600 hover:text-white' 
+                      : 'text-green-600 border-green-600 hover:bg-green-600 hover:text-white'
+                  }`}
                 >
-                  {product.isActive ? 'Deactivate' : 'Activate'}
+                  <span className="hidden sm:inline">{product.isActive ? 'Deactivate' : 'Activate'}</span>
+                  <span className="sm:hidden">{product.isActive ? 'Deactivate' : 'Activate'}</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleDeleteProduct(product._id, product.name)}
-                  className="text-red-600 border-red-600 hover:bg-red-600 hover:text-white"
+                  className="text-red-600 border-red-600 hover:bg-red-600 hover:text-white text-sm w-full sm:w-auto"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  <span className="hidden sm:inline">Delete</span>
+                  <span className="sm:hidden">Delete</span>
                 </Button>
               </div>
             </CardContent>
@@ -703,8 +712,8 @@ const ProductManagement = () => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-600">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-gray-600 text-center sm:text-left">
             Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, totalProducts)} of {totalProducts} products
           </p>
           <div className="flex items-center space-x-2">
@@ -713,7 +722,7 @@ const ProductManagement = () => {
               size="sm"
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white disabled:opacity-50"
+              className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white disabled:opacity-50 text-sm"
             >
               Previous
             </Button>
@@ -725,7 +734,7 @@ const ProductManagement = () => {
               size="sm"
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white disabled:opacity-50"
+              className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white disabled:opacity-50 text-sm"
             >
               Next
             </Button>
@@ -734,10 +743,10 @@ const ProductManagement = () => {
       )}
 
       {products.length === 0 && !loading && (
-        <div className="text-center py-12">
+        <div className="text-center py-8 sm:py-12">
           <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No Products Found</h3>
-          <p className="text-gray-600">
+          <p className="text-sm text-gray-600">
             {searchTerm || selectedCategory 
               ? "Try adjusting your search or filter criteria"
               : "Get started by adding your first product"
@@ -745,7 +754,8 @@ const ProductManagement = () => {
           </p>
           <Button className="mt-4 bg-red-600 hover:bg-red-700" onClick={handleAddProduct}>
             <Plus className="h-4 w-4 mr-2" />
-            Add Product
+            <span className="hidden sm:inline">Add Product</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         </div>
       )}

@@ -216,31 +216,32 @@ const Analytics = () => {
 
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold capitalize">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h3 className="text-base sm:text-lg font-semibold capitalize">
             {selectedChart === 'revenue' ? 'Revenue' : 
              selectedChart === 'orders' ? 'Orders' : 'Customers'} Over Time
           </h3>
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap gap-2">
             {(['revenue', 'orders', 'customers'] as const).map((chart) => (
               <Button
                 key={chart}
                 variant={selectedChart === chart ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedChart(chart)}
-                className={selectedChart === chart ? "bg-red-600 hover:bg-red-700" : ""}
+                className={`text-sm ${selectedChart === chart ? "bg-red-600 hover:bg-red-700" : ""}`}
               >
                 {chart === 'revenue' && <DollarSign className="h-4 w-4 mr-1" />}
                 {chart === 'orders' && <ShoppingCart className="h-4 w-4 mr-1" />}
                 {chart === 'customers' && <Users className="h-4 w-4 mr-1" />}
-                {chart.charAt(0).toUpperCase() + chart.slice(1)}
+                <span className="hidden sm:inline">{getTimeRangeLabel(chart)}</span>
+                <span className="sm:hidden">{chart === 'revenue' ? 'Revenue' : chart === 'orders' ? 'Orders' : 'Customers'}</span>
               </Button>
             ))}
           </div>
         </div>
         
         <div className="bg-white p-4 rounded-lg border">
-          <div className="flex items-end space-x-2 h-48">
+          <div className="flex items-end space-x-2 h-32 sm:h-48 overflow-x-auto">
             {chartData.map((item, index) => {
               if (!item) return null;
               
@@ -250,13 +251,13 @@ const Analytics = () => {
               const height = maxValue > 0 ? (value / maxValue) * 100 : 0;
               
               return (
-                <div key={index} className="flex-1 flex flex-col items-center group">
+                <div key={index} className="flex-1 flex flex-col items-center group min-w-[40px]">
                   <div 
                     className="w-full bg-red-500 rounded-t transition-all duration-300 hover:bg-red-600 min-h-[4px] relative"
                     style={{ height: `${Math.max(height, 2)}%` }}
                   >
                     {/* Tooltip */}
-                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
                       {selectedChart === 'revenue' ? `$${value.toFixed(2)}` : 
                        selectedChart === 'orders' ? `${value} orders` : 
                        `${value} customers`}
@@ -301,43 +302,45 @@ const Analytics = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h2>
-          <p className="text-gray-600">Comprehensive insights and performance metrics</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Analytics Dashboard</h2>
+          <p className="text-sm text-gray-600">Comprehensive insights and performance metrics</p>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
-            className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+            className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
           >
             <option value="7d">Last 7 Days</option>
             <option value="30d">Last 30 Days</option>
             <option value="90d">Last 90 Days</option>
           </select>
-          <Button variant="outline" size="sm" className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white" onClick={handleExportAnalytics}>
+          <Button variant="outline" size="sm" className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white w-full sm:w-auto" onClick={handleExportAnalytics}>
             <Download className="h-4 w-4 mr-2" />
-            Export Data
+            <span className="hidden sm:inline">Export Data</span>
+            <span className="sm:hidden">Export</span>
           </Button>
-          <Button variant="outline" size="sm" className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white" onClick={fetchAnalytics}>
+          <Button variant="outline" size="sm" className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white w-full sm:w-auto" onClick={fetchAnalytics}>
             <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
+            <span className="hidden sm:inline">Refresh</span>
+            <span className="sm:hidden">Refresh</span>
           </Button>
         </div>
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <Card className="border-l-4 border-l-red-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
             <DollarSign className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(analyticsData.overview.totalRevenue)}</div>
+            <div className="text-xl sm:text-2xl font-bold">{formatCurrency(analyticsData.overview.totalRevenue)}</div>
             <p className="text-xs text-muted-foreground">
               {getTimeRangeLabel(timeRange)}
             </p>
@@ -350,7 +353,7 @@ const Analytics = () => {
             <ShoppingCart className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatNumber(analyticsData.overview.totalOrders)}</div>
+            <div className="text-xl sm:text-2xl font-bold">{formatNumber(analyticsData.overview.totalOrders)}</div>
             <p className="text-xs text-muted-foreground">
               {getTimeRangeLabel(timeRange)}
             </p>
@@ -363,7 +366,7 @@ const Analytics = () => {
             <Users className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatNumber(analyticsData.overview.totalCustomers)}</div>
+            <div className="text-xl sm:text-2xl font-bold">{formatNumber(analyticsData.overview.totalCustomers)}</div>
             <p className="text-xs text-muted-foreground">
               {getTimeRangeLabel(timeRange)}
             </p>
@@ -376,7 +379,7 @@ const Analytics = () => {
             <TrendingUp className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(analyticsData.overview.averageOrderValue)}</div>
+            <div className="text-xl sm:text-2xl font-bold">{formatCurrency(analyticsData.overview.averageOrderValue)}</div>
             <p className="text-xs text-muted-foreground">
               Per order
             </p>
@@ -387,11 +390,11 @@ const Analytics = () => {
       {/* Charts Section */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
+          <CardTitle className="flex items-center text-base sm:text-lg">
             <BarChart3 className="h-5 w-5 mr-2" />
             Performance Charts
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm">
             Visual representation of your business metrics over time
           </CardDescription>
         </CardHeader>
@@ -401,15 +404,15 @@ const Analytics = () => {
       </Card>
 
       {/* Top Products and Order Status */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Top Products */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
+            <CardTitle className="flex items-center text-base sm:text-lg">
               <Package className="h-5 w-5 mr-2" />
               Top Selling Products
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-sm">
               Best performing products by sales volume
             </CardDescription>
           </CardHeader>
@@ -418,24 +421,24 @@ const Analytics = () => {
               {analyticsData.topProducts.length > 0 ? (
                 analyticsData.topProducts.map((product, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{product.name}</p>
-                      <p className="text-sm text-gray-600">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 text-sm truncate">{product.name}</p>
+                      <p className="text-xs text-gray-600">
                         {product.totalSold} units sold
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium text-gray-900">
+                    <div className="text-right ml-2">
+                      <p className="font-medium text-gray-900 text-sm">
                         {formatCurrency(product.totalRevenue / 100)}
                       </p>
-                      <p className="text-sm text-gray-600">Revenue</p>
+                      <p className="text-xs text-gray-600">Revenue</p>
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="text-center py-8">
                   <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">No product data available</p>
+                  <p className="text-sm text-gray-600">No product data available</p>
                 </div>
               )}
             </div>
@@ -445,11 +448,11 @@ const Analytics = () => {
         {/* Order Status Distribution */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
+            <CardTitle className="flex items-center text-base sm:text-lg">
               <PieChart className="h-5 w-5 mr-2" />
               Order Status Distribution
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-sm">
               Breakdown of orders by status
             </CardDescription>
           </CardHeader>
@@ -458,15 +461,15 @@ const Analytics = () => {
               {Object.entries(analyticsData.orderStatusDistribution).length > 0 ? (
                 Object.entries(analyticsData.orderStatusDistribution).map(([status, count]) => (
                   <div key={status} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3 min-w-0 flex-1">
                       <Badge className={getStatusColor(status)}>
-                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                        <span className="text-xs">{status.charAt(0).toUpperCase() + status.slice(1)}</span>
                       </Badge>
-                      <span className="text-sm text-gray-600">
+                      <span className="text-xs text-gray-600">
                         {count} orders
                       </span>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right ml-2">
                       <span className="text-sm font-medium text-gray-900">
                         {((count / analyticsData.overview.totalOrders) * 100).toFixed(1)}%
                       </span>
@@ -476,7 +479,7 @@ const Analytics = () => {
               ) : (
                 <div className="text-center py-8">
                   <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">No order data available</p>
+                  <p className="text-sm text-gray-600">No order data available</p>
                 </div>
               )}
             </div>
@@ -487,18 +490,18 @@ const Analytics = () => {
       {/* Additional Metrics */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
+          <CardTitle className="flex items-center text-base sm:text-lg">
             <Activity className="h-5 w-5 mr-2" />
             Additional Metrics
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm">
             Key performance indicators and insights
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-xl sm:text-2xl font-bold text-blue-600">
                 {analyticsData.overview.conversionRate.toFixed(2)}
               </div>
               <p className="text-sm text-blue-600">Orders per Customer</p>
@@ -506,15 +509,15 @@ const Analytics = () => {
             </div>
             
             <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-xl sm:text-2xl font-bold text-green-600">
                 {analyticsData.overview.totalProducts}
               </div>
               <p className="text-sm text-green-600">Active Products</p>
               <p className="text-xs text-gray-600">In Catalog</p>
             </div>
             
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">
+            <div className="text-center p-4 bg-purple-50 rounded-lg sm:col-span-2 lg:col-span-1">
+              <div className="text-xl sm:text-2xl font-bold text-purple-600">
                 {analyticsData.overview.totalRevenue > 0 && analyticsData.overview.totalOrders > 0 
                   ? formatCurrency(analyticsData.overview.totalRevenue / analyticsData.overview.totalOrders)
                   : '$0.00'

@@ -58,6 +58,45 @@ const ReportsManagement = () => {
     status: 'all',
     category: 'all'
   });
+  
+  // Individual report filter states
+  const [salesDateRange, setSalesDateRange] = useState('30');
+  const [salesStatus, setSalesStatus] = useState('all');
+  const [salesExporting, setSalesExporting] = useState(false);
+  
+  const [ordersDateRange, setOrdersDateRange] = useState('30');
+  const [ordersStatus, setOrdersStatus] = useState('all');
+  const [ordersExporting, setOrdersExporting] = useState(false);
+  
+  const [customersDateRange, setCustomersDateRange] = useState('30');
+  const [customersStatus, setCustomersStatus] = useState('all');
+  const [customersExporting, setCustomersExporting] = useState(false);
+  
+  const [offersDateRange, setOffersDateRange] = useState('30');
+  const [offersStatus, setOffersStatus] = useState('all');
+  const [offersExporting, setOffersExporting] = useState(false);
+  
+  const [newsletterDateRange, setNewsletterDateRange] = useState('30');
+  const [newsletterStatus, setNewsletterStatus] = useState('all');
+  const [newsletterExporting, setNewsletterExporting] = useState(false);
+  
+  const [analyticsDateRange, setAnalyticsDateRange] = useState('30');
+  const [analyticsStatus, setAnalyticsStatus] = useState('all');
+  const [analyticsExporting, setAnalyticsExporting] = useState(false);
+  
+  const [announcementsDateRange, setAnnouncementsDateRange] = useState('30');
+  const [announcementsStatus, setAnnouncementsStatus] = useState('all');
+  const [announcementsExporting, setAnnouncementsExporting] = useState(false);
+  
+  const [salesTrendDateRange, setSalesTrendDateRange] = useState('30');
+  const [salesTrendStatus, setSalesTrendStatus] = useState('all');
+  const [salesTrendExporting, setSalesTrendExporting] = useState(false);
+  
+  // Products report state variables
+  const [productsCategory, setProductsCategory] = useState('all');
+  const [productsStatus, setProductsStatus] = useState('all');
+  const [productsExporting, setProductsExporting] = useState(false);
+  
   const { toast } = useToast();
 
   const reportTypes: ReportType[] = [
@@ -209,8 +248,376 @@ const ReportsManagement = () => {
   const handleFilteredExport = () => {
     if (selectedReport) {
       handleExportReport(selectedReport);
-      setShowFilterModal(false);
-      setSelectedReport(null);
+    }
+  };
+
+  // Individual report export handlers
+  const handleExportSales = async () => {
+    try {
+      setSalesExporting(true);
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/reports/sales/export?dateRange=${salesDateRange}&status=${salesStatus}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to export sales report');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sales-report-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: "Sales report exported successfully",
+      });
+    } catch (error) {
+      console.error('Error exporting sales report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export sales report",
+        variant: "destructive",
+      });
+    } finally {
+      setSalesExporting(false);
+    }
+  };
+
+  const handleExportOrders = async () => {
+    try {
+      setOrdersExporting(true);
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/reports/orders/export?dateRange=${ordersDateRange}&status=${ordersStatus}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to export orders report');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `orders-report-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: "Orders report exported successfully",
+      });
+    } catch (error) {
+      console.error('Error exporting orders report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export orders report",
+        variant: "destructive",
+      });
+    } finally {
+      setOrdersExporting(false);
+    }
+  };
+
+  const handleExportCustomers = async () => {
+    try {
+      setCustomersExporting(true);
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/reports/customers/export?dateRange=${customersDateRange}&status=${customersStatus}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to export customers report');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `customers-report-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: "Customers report exported successfully",
+      });
+    } catch (error) {
+      console.error('Error exporting customers report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export customers report",
+        variant: "destructive",
+      });
+    } finally {
+      setCustomersExporting(false);
+    }
+  };
+
+  const handleExportOffers = async () => {
+    try {
+      setOffersExporting(true);
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/reports/offers/export?dateRange=${offersDateRange}&status=${offersStatus}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to export offers report');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `offers-report-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: "Offers report exported successfully",
+      });
+    } catch (error) {
+      console.error('Error exporting offers report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export offers report",
+        variant: "destructive",
+      });
+    } finally {
+      setOffersExporting(false);
+    }
+  };
+
+  const handleExportNewsletter = async () => {
+    try {
+      setNewsletterExporting(true);
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/reports/newsletter/export?dateRange=${newsletterDateRange}&status=${newsletterStatus}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to export newsletter report');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `newsletter-report-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: "Newsletter report exported successfully",
+      });
+    } catch (error) {
+      console.error('Error exporting newsletter report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export newsletter report",
+        variant: "destructive",
+      });
+    } finally {
+      setNewsletterExporting(false);
+    }
+  };
+
+  const handleExportAnalytics = async () => {
+    try {
+      setAnalyticsExporting(true);
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/reports/analytics/export?dateRange=${analyticsDateRange}&status=${analyticsStatus}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to export analytics report');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `analytics-report-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: "Analytics report exported successfully",
+      });
+    } catch (error) {
+      console.error('Error exporting analytics report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export analytics report",
+        variant: "destructive",
+      });
+    } finally {
+      setAnalyticsExporting(false);
+    }
+  };
+
+  const handleExportAnnouncements = async () => {
+    try {
+      setAnnouncementsExporting(true);
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/reports/announcements/export?dateRange=${announcementsDateRange}&status=${announcementsStatus}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to export announcements report');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `announcements-report-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: "Announcements report exported successfully",
+      });
+    } catch (error) {
+      console.error('Error exporting announcements report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export announcements report",
+        variant: "destructive",
+      });
+    } finally {
+      setAnnouncementsExporting(false);
+    }
+  };
+
+  const handleExportSalesTrend = async () => {
+    try {
+      setSalesTrendExporting(true);
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/reports/sales-trend/export?dateRange=${salesTrendDateRange}&status=${salesTrendStatus}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to export sales trend report');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sales-trend-report-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: "Sales trend report exported successfully",
+      });
+    } catch (error) {
+      console.error('Error exporting sales trend report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export sales trend report",
+        variant: "destructive",
+      });
+    } finally {
+      setSalesTrendExporting(false);
+    }
+  };
+
+  const handleExportProducts = async () => {
+    try {
+      setProductsExporting(true);
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/reports/products/export?category=${productsCategory}&status=${productsStatus}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to export products report');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `products-report-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: "Products report exported successfully",
+      });
+    } catch (error) {
+      console.error('Error exporting products report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export products report",
+        variant: "destructive",
+      });
+    } finally {
+      setProductsExporting(false);
     }
   };
 
@@ -240,135 +647,402 @@ const ReportsManagement = () => {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
-          <p className="text-gray-600">Generate and export comprehensive business reports</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Reports Management</h2>
+          <p className="text-sm text-gray-600">Generate and export business reports</p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setShowFilterModal(true)}
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Filter Reports
-          </Button>
-        </div>
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Available Reports</CardTitle>
-            <FileText className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{reportTypes.filter(r => r.available).length}</div>
-            <p className="text-xs text-muted-foreground">
-              Ready to export
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Categories</CardTitle>
-            <Database className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">5</div>
-            <p className="text-xs text-muted-foreground">
-              Report types
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Export Formats</CardTitle>
-            <Download className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">3</div>
-            <p className="text-xs text-muted-foreground">
-              Excel, CSV, PDF
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Last Export</CardTitle>
-            <Clock className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">-</div>
-            <p className="text-xs text-muted-foreground">
-              No recent exports
-            </p>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Reports Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredReports.map((report) => {
-          const Icon = report.icon;
-          return (
-            <Card key={report.id} className="hover:shadow-lg transition-shadow flex flex-col min-h-[200px]">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className={`p-2 rounded-lg ${report.color}`}>
-                      <Icon className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">{report.name}</CardTitle>
-                      <Badge className={getCategoryColor(report.category)}>
-                        {report.category}
-                      </Badge>
-                    </div>
-                  </div>
-                  <Badge className={getFormatBadge(report.format)}>
-                    {report.format.toUpperCase()}
-                  </Badge>
-                </div>
-                <CardDescription className="mt-2">
-                  {report.description}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1 flex flex-col justify-end">
-                <div className="flex gap-2 mt-auto">
-                  <Button
-                    onClick={() => handleQuickExport(report)}
-                    disabled={!report.available || loading === report.id}
-                    className="flex-1"
-                  >
-                    {loading === report.id ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Exporting...
-                      </>
-                    ) : (
-                      <>
-                        <Download className="h-4 w-4 mr-2" />
-                        Export
-                      </>
-                    )}
-                  </Button>
-                  {!report.available && (
-                    <Badge variant="secondary" className="ml-2">
-                      Coming Soon
-                    </Badge>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Sales Report */}
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <TrendingUp className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <CardTitle className="text-base sm:text-lg">Sales Report</CardTitle>
+                <CardDescription className="text-sm">Revenue and sales analytics</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Date Range:</span>
+                <select
+                  value={salesDateRange}
+                  onChange={(e) => setSalesDateRange(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="7">Last 7 days</option>
+                  <option value="30">Last 30 days</option>
+                  <option value="90">Last 90 days</option>
+                  <option value="365">Last year</option>
+                </select>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Status:</span>
+                <select
+                  value={salesStatus}
+                  onChange={(e) => setSalesStatus(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="all">All Orders</option>
+                  <option value="completed">Completed</option>
+                  <option value="pending">Pending</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+            </div>
+            <Button 
+              onClick={handleExportSales}
+              className="w-full bg-green-600 hover:bg-green-700 text-white text-sm"
+              disabled={salesExporting}
+            >
+              {salesExporting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  <span className="hidden sm:inline">Exporting...</span>
+                  <span className="sm:hidden">Exporting...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Export Sales Report</span>
+                  <span className="sm:hidden">Export Sales</span>
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Orders Report */}
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <ShoppingCart className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <CardTitle className="text-base sm:text-lg">Orders Report</CardTitle>
+                <CardDescription className="text-sm">Order processing and fulfillment</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Date Range:</span>
+                <select
+                  value={ordersDateRange}
+                  onChange={(e) => setOrdersDateRange(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="7">Last 7 days</option>
+                  <option value="30">Last 30 days</option>
+                  <option value="90">Last 90 days</option>
+                  <option value="365">Last year</option>
+                </select>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Status:</span>
+                <select
+                  value={ordersStatus}
+                  onChange={(e) => setOrdersStatus(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="all">All Orders</option>
+                  <option value="pending">Pending</option>
+                  <option value="processing">Processing</option>
+                  <option value="shipped">Shipped</option>
+                  <option value="delivered">Delivered</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+            </div>
+            <Button 
+              onClick={handleExportOrders}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm"
+              disabled={ordersExporting}
+            >
+              {ordersExporting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  <span className="hidden sm:inline">Exporting...</span>
+                  <span className="sm:hidden">Exporting...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Export Orders Report</span>
+                  <span className="sm:hidden">Export Orders</span>
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Customers Report */}
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Users className="h-5 w-5 text-purple-600" />
+              </div>
+              <div>
+                <CardTitle className="text-base sm:text-lg">Customers Report</CardTitle>
+                <CardDescription className="text-sm">Customer demographics and behavior</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Date Range:</span>
+                <select
+                  value={customersDateRange}
+                  onChange={(e) => setCustomersDateRange(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="7">Last 7 days</option>
+                  <option value="30">Last 30 days</option>
+                  <option value="90">Last 90 days</option>
+                  <option value="365">Last year</option>
+                </select>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Status:</span>
+                <select
+                  value={customersStatus}
+                  onChange={(e) => setCustomersStatus(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="all">All Customers</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="new">New</option>
+                </select>
+              </div>
+            </div>
+            <Button 
+              onClick={handleExportCustomers}
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm"
+              disabled={customersExporting}
+            >
+              {customersExporting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  <span className="hidden sm:inline">Exporting...</span>
+                  <span className="sm:hidden">Exporting...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Export Customers Report</span>
+                  <span className="sm:hidden">Export Customers</span>
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Products Report */}
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <Package className="h-5 w-5 text-orange-600" />
+              </div>
+              <div>
+                <CardTitle className="text-base sm:text-lg">Products Report</CardTitle>
+                <CardDescription className="text-sm">Inventory and product performance</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Category:</span>
+                <select
+                  value={productsCategory}
+                  onChange={(e) => setProductsCategory(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="all">All Categories</option>
+                  <option value="foodstuffs">Foodstuffs</option>
+                  <option value="household-items">Household Items</option>
+                  <option value="beverages">Beverages</option>
+                  <option value="electronics">Electronics</option>
+                </select>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Status:</span>
+                <select
+                  value={productsStatus}
+                  onChange={(e) => setProductsStatus(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="all">All Products</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="out-of-stock">Out of Stock</option>
+                </select>
+              </div>
+            </div>
+            <Button 
+              onClick={handleExportProducts}
+              className="w-full bg-orange-600 hover:bg-orange-700 text-white text-sm"
+              disabled={productsExporting}
+            >
+              {productsExporting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  <span className="hidden sm:inline">Exporting...</span>
+                  <span className="sm:hidden">Exporting...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Export Products Report</span>
+                  <span className="sm:hidden">Export Products</span>
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Offers Report */}
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <Tag className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <CardTitle className="text-base sm:text-lg">Offers Report</CardTitle>
+                <CardDescription className="text-sm">Promotional offers and discounts</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Date Range:</span>
+                <select
+                  value={offersDateRange}
+                  onChange={(e) => setOffersDateRange(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="7">Last 7 days</option>
+                  <option value="30">Last 30 days</option>
+                  <option value="90">Last 90 days</option>
+                  <option value="365">Last year</option>
+                </select>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Status:</span>
+                <select
+                  value={offersStatus}
+                  onChange={(e) => setOffersStatus(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="all">All Offers</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="expired">Expired</option>
+                </select>
+              </div>
+            </div>
+            <Button 
+              onClick={handleExportOffers}
+              className="w-full bg-red-600 hover:bg-red-700 text-white text-sm"
+              disabled={offersExporting}
+            >
+              {offersExporting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  <span className="hidden sm:inline">Exporting...</span>
+                  <span className="sm:hidden">Exporting...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Export Offers Report</span>
+                  <span className="sm:hidden">Export Offers</span>
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Newsletter Report */}
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <div className="p-2 bg-indigo-100 rounded-lg">
+                <Mail className="h-5 w-5 text-indigo-600" />
+              </div>
+              <div>
+                <CardTitle className="text-base sm:text-lg">Newsletter Report</CardTitle>
+                <CardDescription className="text-sm">Email campaigns and subscribers</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Date Range:</span>
+                <select
+                  value={newsletterDateRange}
+                  onChange={(e) => setNewsletterDateRange(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="7">Last 7 days</option>
+                  <option value="30">Last 30 days</option>
+                  <option value="90">Last 90 days</option>
+                  <option value="365">Last year</option>
+                </select>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Status:</span>
+                <select
+                  value={newsletterStatus}
+                  onChange={(e) => setNewsletterStatus(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="all">All Subscribers</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+            <Button 
+              onClick={handleExportNewsletter}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm"
+              disabled={newsletterExporting}
+            >
+              {newsletterExporting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  <span className="hidden sm:inline">Exporting...</span>
+                  <span className="sm:hidden">Exporting...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Export Newsletter Report</span>
+                  <span className="sm:hidden">Export Newsletter</span>
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Report Categories */}

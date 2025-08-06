@@ -28,7 +28,8 @@ import {
   MoreHorizontal,
   Plus,
   TrendingUp,
-  Activity
+  Activity,
+  ShoppingCart
 } from 'lucide-react';
 
 interface Customer {
@@ -410,21 +411,23 @@ const CustomerManagement = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Customer Management</h2>
-          <p className="text-gray-600">View and manage customer accounts</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Customer Management</h2>
+          <p className="text-sm text-gray-600">View and manage customer accounts</p>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white" onClick={handleExportCustomers}>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+          <Button variant="outline" size="sm" className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white w-full sm:w-auto" onClick={handleExportCustomers}>
             <Download className="h-4 w-4 mr-2" />
-            Export Customers
+            <span className="hidden sm:inline">Export Customers</span>
+            <span className="sm:hidden">Export</span>
           </Button>
-          <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleViewAnalytics}>
+          <Button className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto" onClick={handleViewAnalytics}>
             <Activity className="h-4 w-4 mr-2" />
-            View Analytics
+            <span className="hidden sm:inline">View Analytics</span>
+            <span className="sm:hidden">Analytics</span>
           </Button>
         </div>
       </div>
@@ -432,13 +435,13 @@ const CustomerManagement = () => {
       {/* Filters and Search */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
+          <CardTitle className="flex items-center text-base sm:text-lg">
             <Filter className="h-5 w-5 mr-2" />
             Filters & Search
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
@@ -446,13 +449,13 @@ const CustomerManagement = () => {
                 placeholder="Search customers by name, email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
               />
             </div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
             >
               <option value="">All Statuses</option>
               <option value="active">Active</option>
@@ -467,7 +470,7 @@ const CustomerManagement = () => {
                   setStatusFilter('');
                   setCurrentPage(1);
                 }}
-                className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white text-sm w-full sm:w-auto"
               >
                 Clear Filters
               </Button>
@@ -481,13 +484,13 @@ const CustomerManagement = () => {
         {customers.map((customer) => (
           <Card key={customer._id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
                     <User className="h-5 w-5 text-red-600" />
                     <div>
-                      <CardTitle className="text-lg">{customer.name}</CardTitle>
-                      <CardDescription>
+                      <CardTitle className="text-base sm:text-lg">{customer.name}</CardTitle>
+                      <CardDescription className="text-sm">
                         {new Date(customer.createdAt).toLocaleDateString()} at {new Date(customer.createdAt).toLocaleTimeString()}
                       </CardDescription>
                     </div>
@@ -496,7 +499,7 @@ const CustomerManagement = () => {
                 <div className="flex items-center space-x-2">
                   <Badge className={getStatusColor(customer.isActive)}>
                     {getStatusIcon(customer.isActive)}
-                    <span className="ml-1">{customer.isActive ? 'Active' : 'Inactive'}</span>
+                    <span className="ml-1 text-xs">{customer.isActive ? 'Active' : 'Inactive'}</span>
                   </Badge>
                 </div>
               </div>
@@ -504,9 +507,9 @@ const CustomerManagement = () => {
             
             <CardContent className="space-y-4">
               {/* Customer Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <h4 className="font-medium text-gray-900 flex items-center">
+                  <h4 className="font-medium text-gray-900 flex items-center text-sm">
                     <User className="h-4 w-4 mr-2" />
                     Customer Information
                   </h4>
@@ -529,55 +532,61 @@ const CustomerManagement = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <h4 className="font-medium text-gray-900 flex items-center">
+                  <h4 className="font-medium text-gray-900 flex items-center text-sm">
                     <Calendar className="h-4 w-4 mr-2" />
                     Account Details
                   </h4>
                   <div className="text-sm space-y-1">
-                    <p>Member since: {new Date(customer.createdAt).toLocaleDateString()}</p>
+                    <p>Role: {customer.role}</p>
+                    <p>Joined: {new Date(customer.createdAt).toLocaleDateString()}</p>
                     {customer.lastLogin && (
-                      <p>Last login: {new Date(customer.lastLogin).toLocaleDateString()}</p>
+                      <p>Last Login: {new Date(customer.lastLogin).toLocaleDateString()}</p>
                     )}
-                    <p>Status: {customer.isActive ? 'Active' : 'Inactive'}</p>
                   </div>
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="flex items-center justify-between pt-4 border-t">
-                <div className="text-sm text-gray-600">
-                  <p>Customer ID: {customer._id}</p>
-                </div>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between pt-4 border-t gap-4">
                 <div className="flex items-center space-x-2">
+                  <Badge variant="outline" className="text-xs">
+                    <User className="h-3 w-3 mr-1" />
+                    Customer Account
+                  </Badge>
+                </div>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => handleViewCustomerDetails(customer._id)}
-                    className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                    className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white text-sm w-full sm:w-auto"
                   >
                     <Eye className="h-4 w-4 mr-1" />
-                    View Details
+                    <span className="hidden sm:inline">View Details</span>
+                    <span className="sm:hidden">Details</span>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleUpdateCustomerStatus(customer._id, !customer.isActive)}
-                    className={customer.isActive 
-                      ? "border-red-600 text-red-600 hover:bg-red-600 hover:text-white" 
-                      : "border-green-600 text-green-600 hover:bg-green-600 hover:text-white"
-                    }
+                    onClick={() => handleUpdateCustomerStatus(customer._id, customer.isActive)}
+                    className={`text-sm w-full sm:w-auto ${
+                      customer.isActive 
+                        ? 'text-orange-600 border-orange-600 hover:bg-orange-600 hover:text-white' 
+                        : 'text-green-600 border-green-600 hover:bg-green-600 hover:text-white'
+                    }`}
                   >
-                    {customer.isActive ? <UserX className="h-4 w-4 mr-1" /> : <UserCheck className="h-4 w-4 mr-1" />}
-                    {customer.isActive ? 'Deactivate' : 'Activate'}
+                    <span className="hidden sm:inline">{customer.isActive ? 'Deactivate' : 'Activate'}</span>
+                    <span className="sm:hidden">{customer.isActive ? 'Deactivate' : 'Activate'}</span>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleDeleteCustomer(customer._id)}
-                    className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                    className="text-red-600 border-red-600 hover:bg-red-600 hover:text-white text-sm w-full sm:w-auto"
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
-                    Delete
+                    <span className="hidden sm:inline">Delete</span>
+                    <span className="sm:hidden">Delete</span>
                   </Button>
                 </div>
               </div>
@@ -588,8 +597,8 @@ const CustomerManagement = () => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-600">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-gray-600 text-center sm:text-left">
             Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, totalCustomers)} of {totalCustomers} customers
           </p>
           <div className="flex items-center space-x-2">
@@ -598,7 +607,7 @@ const CustomerManagement = () => {
               size="sm"
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               Previous
             </Button>
@@ -610,7 +619,7 @@ const CustomerManagement = () => {
               size="sm"
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               Next
             </Button>
@@ -619,11 +628,11 @@ const CustomerManagement = () => {
       )}
 
       {customers.length === 0 && !loading && (
-        <div className="text-center py-12">
+        <div className="text-center py-8 sm:py-12">
           <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No Customers Found</h3>
-          <p className="text-gray-600">
-            {searchTerm || statusFilter 
+          <p className="text-sm text-gray-600">
+            {searchTerm || statusFilter
               ? "Try adjusting your search or filter criteria"
               : "No customers have registered yet"
             }
@@ -638,55 +647,51 @@ const CustomerManagement = () => {
           onClick={handleCloseCustomerModal}
         >
           <div 
-            className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b">
               <div className="flex items-center space-x-3">
                 <User className="h-6 w-6 text-red-600" />
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">
-                    {selectedCustomer.name}
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+                    Customer Details
                   </h2>
                   <p className="text-sm text-gray-600">
-                    Customer since {new Date(selectedCustomer.createdAt).toLocaleDateString()}
+                    {selectedCustomer.name} - {selectedCustomer.email}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Button variant="outline" size="sm" onClick={handleCloseCustomerModal} className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                <Button variant="outline" size="sm" onClick={handleCloseCustomerModal} className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white text-sm w-full sm:w-auto">
                   <X className="h-4 w-4" />
+                  <span className="sr-only">Close Customer Details</span>
                 </Button>
               </div>
             </div>
 
             {/* Modal Content */}
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* Customer Status */}
               <div className="space-y-2">
-                <h3 className="font-medium text-gray-900 flex items-center">
+                <h3 className="font-medium text-gray-900 flex items-center text-sm">
                   <Info className="h-4 w-4 mr-2" />
                   Account Status
                 </h3>
                 <Badge className={getStatusColor(selectedCustomer.isActive)}>
                   {getStatusIcon(selectedCustomer.isActive)}
-                  <span className="ml-1">{selectedCustomer.isActive ? 'Active' : 'Inactive'}</span>
+                  <span className="ml-1 capitalize text-xs">{selectedCustomer.isActive ? 'Active' : 'Inactive'}</span>
                 </Badge>
-                {selectedCustomer.lastLogin && (
-                  <p className="text-sm text-gray-600">
-                    Last login: {new Date(selectedCustomer.lastLogin).toLocaleDateString()}
-                  </p>
-                )}
               </div>
 
               {/* Customer Information */}
               <div className="space-y-3">
-                <h3 className="font-medium text-gray-900 flex items-center">
+                <h3 className="font-medium text-gray-900 flex items-center text-sm">
                   <User className="h-4 w-4 mr-2" />
                   Customer Information
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
                   <div className="space-y-2">
                     <p className="text-sm">
                       <span className="font-medium">Name:</span> {selectedCustomer.name}
@@ -703,50 +708,35 @@ const CustomerManagement = () => {
                     )}
                   </div>
                   <div className="space-y-2">
-                    <h4 className="font-medium text-gray-900 flex items-center">
+                    <h4 className="font-medium text-gray-900 flex items-center text-sm">
                       <Calendar className="h-4 w-4 mr-2" />
                       Account Details
                     </h4>
                     <div className="text-sm space-y-1">
-                      <p>Created: {new Date(selectedCustomer.createdAt).toLocaleDateString()}</p>
-                      <p>Updated: {new Date(selectedCustomer.updatedAt).toLocaleDateString()}</p>
-                      <p>Customer ID: {selectedCustomer._id}</p>
+                      <p>Role: {selectedCustomer.role}</p>
+                      <p>Joined: {new Date(selectedCustomer.createdAt).toLocaleDateString()}</p>
+                      {selectedCustomer.lastLogin && (
+                        <p>Last Login: {new Date(selectedCustomer.lastLogin).toLocaleDateString()}</p>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Account Actions */}
+              {/* Account Summary */}
               <div className="border-t pt-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
+                <div className="space-y-1">
+                  <p className="text-base sm:text-lg font-bold text-gray-900">
+                    Customer ID: {selectedCustomer._id}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Account created on {new Date(selectedCustomer.createdAt).toLocaleDateString()}
+                  </p>
+                  {selectedCustomer.updatedAt !== selectedCustomer.createdAt && (
                     <p className="text-sm text-gray-600">
-                      Customer ID: {selectedCustomer._id}
+                      Last updated on {new Date(selectedCustomer.updatedAt).toLocaleDateString()}
                     </p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleUpdateCustomerStatus(selectedCustomer._id, !selectedCustomer.isActive)}
-                      className={selectedCustomer.isActive 
-                        ? "border-red-600 text-red-600 hover:bg-red-600 hover:text-white" 
-                        : "border-green-600 text-green-600 hover:bg-green-600 hover:text-white"
-                      }
-                    >
-                      {selectedCustomer.isActive ? <UserX className="h-4 w-4 mr-1" /> : <UserCheck className="h-4 w-4 mr-1" />}
-                      {selectedCustomer.isActive ? 'Deactivate' : 'Activate'}
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleDeleteCustomer(selectedCustomer._id)}
-                      className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Delete Customer
-                    </Button>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -761,17 +751,17 @@ const CustomerManagement = () => {
           onClick={handleCloseAnalyticsModal}
         >
           <div 
-            className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-red-100 rounded-lg">
                   <Activity className="h-6 w-6 text-red-600" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">
                     Customer Analytics Dashboard
                   </h2>
                   <p className="text-sm text-gray-600">
@@ -779,13 +769,14 @@ const CustomerManagement = () => {
                   </p>
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={handleCloseAnalyticsModal} className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white">
+              <Button variant="outline" size="sm" onClick={handleCloseAnalyticsModal} className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white text-sm">
                 <X className="h-4 w-4" />
+                <span className="sr-only">Close Analytics</span>
               </Button>
             </div>
 
             {/* Modal Content */}
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {analyticsLoading ? (
                 <div className="flex items-center justify-center h-64">
                   <div className="text-center">
@@ -794,95 +785,104 @@ const CustomerManagement = () => {
                   </div>
                 </div>
               ) : analyticsData ? (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   {/* Key Metrics */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 sm:p-6 rounded-lg">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm opacity-90">Total Customers</p>
-                          <p className="text-2xl font-bold">{analyticsData.totalCustomers}</p>
+                          <p className="text-xs sm:text-sm opacity-90">Total Customers</p>
+                          <p className="text-xl sm:text-2xl font-bold">{analyticsData.totalCustomers}</p>
                         </div>
-                        <Users className="h-8 w-8 opacity-80" />
+                        <Users className="h-6 w-6 sm:h-8 sm:w-8 opacity-80" />
                       </div>
                     </div>
                     
-                    <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-lg">
+                    <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 sm:p-6 rounded-lg">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm opacity-90">Active Customers</p>
-                          <p className="text-2xl font-bold">{analyticsData.activeCustomers}</p>
+                          <p className="text-xs sm:text-sm opacity-90">Active Customers</p>
+                          <p className="text-xl sm:text-2xl font-bold">{analyticsData.activeCustomers}</p>
                         </div>
-                        <UserCheck className="h-8 w-8 opacity-80" />
+                        <UserCheck className="h-6 w-6 sm:h-8 sm:w-8 opacity-80" />
                       </div>
                     </div>
                     
-                    <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-lg">
+                    <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 sm:p-6 rounded-lg">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm opacity-90">Inactive Customers</p>
-                          <p className="text-2xl font-bold">{analyticsData.inactiveCustomers}</p>
+                          <p className="text-xs sm:text-sm opacity-90">New Customers</p>
+                          <p className="text-xl sm:text-2xl font-bold">{analyticsData.newCustomers}</p>
                         </div>
-                        <UserX className="h-8 w-8 opacity-80" />
+                        <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 opacity-80" />
                       </div>
                     </div>
                     
-                    <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6 rounded-lg">
+                    <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 sm:p-6 rounded-lg">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm opacity-90">New Customers</p>
-                          <p className="text-2xl font-bold">{analyticsData.newCustomers}</p>
+                          <p className="text-xs sm:text-sm opacity-90">Inactive Customers</p>
+                          <p className="text-xl sm:text-2xl font-bold">{analyticsData.inactiveCustomers}</p>
                         </div>
-                        <Plus className="h-8 w-8 opacity-80" />
+                        <UserX className="h-6 w-6 sm:h-8 sm:w-8 opacity-80" />
                       </div>
                     </div>
                   </div>
 
-                  {/* Additional Stats */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-gray-50 p-6 rounded-lg">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Customer Engagement</h3>
-                      <div className="space-y-3">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Avg Orders per Customer:</span>
-                          <span className="font-semibold">{analyticsData.averageOrdersPerCustomer.toFixed(1)}</span>
+                  {/* Customer Insights */}
+                  <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Customer Insights</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="bg-white p-4 rounded-lg shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-600">Average Orders</p>
+                            <p className="text-xl sm:text-2xl font-bold text-gray-900">
+                              {analyticsData.averageOrdersPerCustomer.toFixed(1)}
+                            </p>
+                          </div>
+                          <ShoppingCart className="h-6 w-6 text-blue-600" />
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Avg Spent per Customer:</span>
-                          <span className="font-semibold">${(analyticsData.averageSpentPerCustomer / 100).toFixed(2)}</span>
+                      </div>
+                      <div className="bg-white p-4 rounded-lg shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-600">Average Spent</p>
+                            <p className="text-xl sm:text-2xl font-bold text-gray-900">
+                              ${analyticsData.averageSpentPerCustomer.toFixed(2)}
+                            </p>
+                          </div>
+                          <CreditCard className="h-6 w-6 text-green-600" />
                         </div>
                       </div>
                     </div>
-                    
-                    <div className="bg-gray-50 p-6 rounded-lg">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Time Range</h3>
-                      <div className="space-y-3">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Period:</span>
-                          <span className="font-semibold">Last {analyticsData.timeRange}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Last Updated:</span>
-                          <span className="font-semibold">{new Date().toLocaleString()}</span>
-                        </div>
-                      </div>
+                  </div>
+
+                  {/* Time Range Info */}
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <Info className="h-5 w-5 text-blue-600" />
+                      <p className="text-sm text-blue-800">
+                        Statistics based on the last {analyticsData.timeRange || '30'} days
+                      </p>
                     </div>
                   </div>
 
                   {/* Quick Actions */}
-                  <div className="flex items-center justify-between pt-4 border-t">
-                    <div className="text-sm text-gray-600">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-4 border-t gap-4">
+                    <div className="text-sm text-gray-600 text-center sm:text-left">
                       <p>Last updated: {new Date().toLocaleString()}</p>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                       <Button 
                         variant="outline" 
                         size="sm" 
                         onClick={handleExportCustomers}
-                        className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                        className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white text-sm w-full sm:w-auto"
                       >
                         <Download className="h-4 w-4 mr-1" />
-                        Export Data
+                        <span className="hidden sm:inline">Export Data</span>
+                        <span className="sm:hidden">Export</span>
                       </Button>
                       <Button 
                         variant="outline" 
@@ -891,10 +891,11 @@ const CustomerManagement = () => {
                           handleCloseAnalyticsModal();
                           fetchCustomers();
                         }}
-                        className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                        className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white text-sm w-full sm:w-auto"
                       >
                         <RefreshCw className="h-4 w-4 mr-1" />
-                        Refresh
+                        <span className="hidden sm:inline">Refresh</span>
+                        <span className="sm:hidden">Refresh</span>
                       </Button>
                     </div>
                   </div>
@@ -903,7 +904,7 @@ const CustomerManagement = () => {
                 <div className="text-center py-12">
                   <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No Analytics Data</h3>
-                  <p className="text-gray-600">
+                  <p className="text-sm text-gray-600">
                     Unable to load analytics data. Please try again.
                   </p>
                 </div>

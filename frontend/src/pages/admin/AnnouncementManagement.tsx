@@ -110,12 +110,12 @@ const AnnouncementManagement = () => {
   const [editForm, setEditForm] = useState({
     title: '',
     content: '',
-    type: 'info' as const,
-    priority: 'medium' as const,
+    type: 'info' as 'info' | 'success' | 'warning' | 'error' | 'promotion',
+    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
     startDate: '',
     endDate: '',
-    targetAudience: 'all' as const,
-    displayLocation: 'top' as const,
+    targetAudience: 'all' as 'all' | 'registered' | 'guests',
+    displayLocation: 'top' as 'top' | 'bottom' | 'sidebar' | 'modal',
     images: [] as File[],
     removeImages: [] as string[]
   });
@@ -124,6 +124,10 @@ const AnnouncementManagement = () => {
   useEffect(() => {
     fetchAnnouncements();
   }, [currentPage, searchTerm, typeFilter, priorityFilter, statusFilter]);
+
+  useEffect(() => {
+    console.log('showCreateModal state changed to:', showCreateModal);
+  }, [showCreateModal]);
 
   const fetchAnnouncements = async () => {
     try {
@@ -467,12 +471,12 @@ const AnnouncementManagement = () => {
     setEditForm({
       title: announcement.title,
       content: announcement.content,
-      type: announcement.type,
-      priority: announcement.priority,
+      type: announcement.type as 'info' | 'success' | 'warning' | 'error' | 'promotion',
+      priority: announcement.priority as 'low' | 'medium' | 'high' | 'urgent',
       startDate: announcement.startDate.split('T')[0] + 'T' + announcement.startDate.split('T')[1].substring(0, 5),
       endDate: announcement.endDate.split('T')[0] + 'T' + announcement.endDate.split('T')[1].substring(0, 5),
-      targetAudience: announcement.targetAudience,
-      displayLocation: announcement.displayLocation,
+      targetAudience: announcement.targetAudience as 'all' | 'registered' | 'guests',
+      displayLocation: announcement.displayLocation as 'top' | 'bottom' | 'sidebar' | 'modal',
       images: [],
       removeImages: []
     });
@@ -481,13 +485,10 @@ const AnnouncementManagement = () => {
 
   const handleViewAnalytics = async () => {
     try {
-      console.log('🔍 Analytics button clicked');
       setAnalyticsLoading(true);
       const token = localStorage.getItem('adminToken');
-      console.log('🔍 Token available:', !!token);
       
       const url = `${import.meta.env.VITE_API_URL}/api/admin/announcements/stats`;
-      console.log('🔍 Fetching from URL:', url);
       
       const response = await fetch(url, {
         headers: {
@@ -496,17 +497,13 @@ const AnnouncementManagement = () => {
         }
       });
 
-      console.log('🔍 Response status:', response.status);
-      console.log('🔍 Response ok:', response.ok);
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('🔍 Error response:', errorText);
+        console.error('Error response:', errorText);
         throw new Error('Failed to fetch analytics');
       }
 
       const data = await response.json();
-      console.log('🔍 Analytics data received:', data);
       setAnalyticsData(data.data);
       setShowAnalyticsModal(true);
     } catch (error) {
@@ -605,7 +602,19 @@ const AnnouncementManagement = () => {
       error: XCircle,
       promotion: TrendingUp
     };
-    return icons[type as keyof typeof icons] || Bell;
+    const IconComponent = icons[type as keyof typeof icons] || Bell;
+    return React.createElement(IconComponent, { className: "h-4 w-4" });
+  };
+
+  const getPriorityIcon = (priority: string) => {
+    const icons = {
+      low: AlertCircle,
+      medium: Info,
+      high: AlertTriangle,
+      urgent: XCircle
+    };
+    const IconComponent = icons[priority as keyof typeof icons] || Info;
+    return React.createElement(IconComponent, { className: "h-4 w-4" });
   };
 
   const getTargetAudienceIcon = (audience: string) => {
@@ -614,7 +623,8 @@ const AnnouncementManagement = () => {
       registered: Info,
       guests: FileText
     };
-    return icons[audience as keyof typeof icons] || Users;
+    const IconComponent = icons[audience as keyof typeof icons] || Users;
+    return React.createElement(IconComponent, { className: "h-4 w-4" });
   };
 
   const getTargetAudienceLabel = (audience: string) => {
@@ -651,27 +661,32 @@ const AnnouncementManagement = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Announcement Management</h1>
-          <p className="text-gray-600">Manage site announcements and notifications</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Announcement Management</h2>
+          <p className="text-sm text-gray-600">Create and manage site announcements</p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleViewAnalytics}
-            disabled={analyticsLoading}
-          >
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Analytics
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+          <Button variant="outline" size="sm" className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white w-full sm:w-auto" onClick={handleViewAnalytics}>
+            <Activity className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">View Analytics</span>
+            <span className="sm:hidden">Analytics</span>
           </Button>
-          <Button
-            onClick={() => setShowCreateModal(true)}
+          <Button 
+            className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto text-sm cursor-pointer font-medium shadow-lg" 
+            onClick={() => {
+              alert('Create button clicked!');
+              console.log('Create button clicked');
+              console.log('Current showCreateModal state:', showCreateModal);
+              setShowCreateModal(true);
+              console.log('Modal state set to true');
+            }}
           >
             <Plus className="h-4 w-4 mr-2" />
-            New Announcement
+            <span className="hidden sm:inline">Create Announcement</span>
+            <span className="sm:hidden">Create</span>
           </Button>
         </div>
       </div>
@@ -737,405 +752,243 @@ const AnnouncementManagement = () => {
         </Card>
       </div>
 
-      {/* Filters */}
+      {/* Filters and Search */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
+          <CardTitle className="flex items-center text-base sm:text-lg">
             <Filter className="h-5 w-5 mr-2" />
-            Filters
+            Filters & Search
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <Label htmlFor="search">Search</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  id="search"
-                  placeholder="Search announcements..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search announcements..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 text-sm"
+              />
             </div>
-            <div>
-              <Label htmlFor="type">Type</Label>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All types</SelectItem>
-                  <SelectItem value="info">Info</SelectItem>
-                  <SelectItem value="success">Success</SelectItem>
-                  <SelectItem value="warning">Warning</SelectItem>
-                  <SelectItem value="error">Error</SelectItem>
-                  <SelectItem value="promotion">Promotion</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="priority">Priority</Label>
-              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All priorities" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All priorities</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  <SelectItem value="true">Active</SelectItem>
-                  <SelectItem value="false">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="text-sm">
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="news">News</SelectItem>
+                <SelectItem value="promotion">Promotion</SelectItem>
+                <SelectItem value="update">Update</SelectItem>
+                <SelectItem value="maintenance">Maintenance</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="text-sm">
+                <SelectValue placeholder="All Priorities" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Priorities</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="urgent">Urgent</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm('');
+                  setTypeFilter('all');
+                  setPriorityFilter('all');
+                  setCurrentPage(1);
+                }}
+                className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white text-sm w-full sm:w-auto"
+              >
+                Clear Filters
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Announcements List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Announcements</CardTitle>
-          <CardDescription>
-            Manage your site announcements and notifications
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Bulk Actions Header */}
-          {announcements.length > 0 && (
-            <div className="flex items-center justify-between mb-4 p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-4">
+      <div className="space-y-4">
+        {announcements.map((announcement) => (
+          <Card key={announcement._id} className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    {getTypeIcon(announcement.type)}
+                    <div>
+                      <CardTitle className="text-base sm:text-lg">{announcement.title}</CardTitle>
+                      <CardDescription className="text-sm">
+                        {new Date(announcement.createdAt).toLocaleDateString()} at {new Date(announcement.createdAt).toLocaleTimeString()}
+                      </CardDescription>
+                    </div>
+                  </div>
+                </div>
                 <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedAnnouncements.length === announcements.length && announcements.length > 0}
-                    onChange={handleSelectAllAnnouncements}
-                    className="h-4 w-4 text-blue-600 border-blue-300 rounded focus:ring-blue-500"
+                  <Badge className={getPriorityColor(announcement.priority)}>
+                    {getPriorityIcon(announcement.priority)}
+                    <span className="ml-1 capitalize text-xs">{announcement.priority}</span>
+                  </Badge>
+                  <Badge variant={announcement.isActive ? "default" : "secondary"} className="text-xs">
+                    {announcement.isActive ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="space-y-4">
+              {/* Announcement Image */}
+              {announcement.images && announcement.images.length > 0 && (
+                <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                  <img
+                    src={announcement.images[0].url}
+                    alt={announcement.images[0].alt}
+                    className="w-full h-full object-cover object-center"
                   />
-                  <span className="text-sm font-medium text-gray-700">
-                    Select All ({announcements.length})
-                  </span>
                 </div>
-                {selectedAnnouncements.length > 0 && (
-                  <span className="text-sm text-blue-600 font-medium">
-                    {selectedAnnouncements.length} selected
-                  </span>
-                )}
-              </div>
-              {selectedAnnouncements.length > 0 && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleBulkDeleteAnnouncements}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Selected ({selectedAnnouncements.length})
-                </Button>
               )}
-            </div>
-          )}
 
-          <div className="max-w-4xl mx-auto">
-            {/* Show urgent announcements first */}
-            {announcements.filter(a => a.priority === 'urgent').length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-red-700 mb-4 flex items-center">
-                  <AlertTriangle className="h-5 w-5 mr-2" />
-                  Urgent Announcements
-                </h3>
-                <div className="space-y-4">
-                  {announcements
-                    .filter(a => a.priority === 'urgent')
-                    .slice(0, showAll ? undefined : 2)
-                    .map((announcement) => (
-                      <article key={announcement._id} className="bg-red-50 border border-red-200 rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-                        <div className="flex flex-col md:flex-row">
-                          {/* Checkbox for bulk selection */}
-                          <div className="flex items-center p-4">
-                            <input
-                              type="checkbox"
-                              checked={selectedAnnouncements.includes(announcement._id)}
-                              onChange={() => handleSelectAnnouncement(announcement._id)}
-                              className="h-4 w-4 text-red-600 border-red-300 rounded focus:ring-red-500"
-                            />
-                          </div>
-                          
-                          {/* Image Section */}
-                          <div className="w-full md:w-64 h-48 md:h-auto bg-red-100 relative overflow-hidden">
-                            {announcement.images && announcement.images.length > 0 ? (
-                              <img
-                                src={announcement.images[0].url}
-                                alt={announcement.images[0].alt || announcement.title}
-                                className="w-full h-full object-cover object-center"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-50 to-pink-50">
-                                <AlertTriangle className="h-12 w-12 text-red-400" />
-                              </div>
-                            )}
-                          </div>
+              {/* Announcement Content */}
+              <div className="space-y-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-700 line-clamp-3">{announcement.content}</p>
+                  </div>
+                </div>
 
-                          {/* Content Section */}
-                          <div className="flex-1 p-6">
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex items-center space-x-2">
-                                <h3 className="text-lg font-semibold text-red-700">
-                                  {announcement.title}
-                                </h3>
-                                {getPriorityBadge(announcement.priority)}
-                              </div>
-                              <div className="flex items-center space-x-2 text-sm text-gray-500">
-                                <Calendar className="h-4 w-4" />
-                                <span>{new Date(announcement.startDate).toLocaleDateString()}</span>
-                              </div>
-                            </div>
-                            
-                            <div className="prose prose-gray max-w-none">
-                              <p className="text-gray-700 leading-relaxed mb-4">
-                                {announcement.content.length > 200 
-                                  ? `${announcement.content.substring(0, 200)}...` 
-                                  : announcement.content
-                                }
-                              </p>
-                            </div>
+                {/* Target Audience */}
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-gray-500">Target:</span>
+                  <Badge variant="outline" className="text-xs">
+                    {getTargetAudienceIcon(announcement.targetAudience)}
+                    <span className="ml-1">{announcement.targetAudience}</span>
+                  </Badge>
+                </div>
 
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-4 text-sm text-gray-500">
-                                <div className="flex items-center space-x-1 bg-red-100 text-red-700 px-2 py-1 rounded-full">
-                                  {React.createElement(getTargetAudienceIcon(announcement.targetAudience), { className: "h-3 w-3" })}
-                                  <span className="text-xs font-medium">{getTargetAudienceLabel(announcement.targetAudience)}</span>
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-center space-x-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleViewAnnouncementDetails(announcement._id)}
-                                  className="flex items-center space-x-1"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                  <span className="text-xs">View</span>
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => openEditModal(announcement)}
-                                  className="flex items-center space-x-1"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                  <span className="text-xs">Edit</span>
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleToggleAnnouncementStatus(announcement._id)}
-                                  className="flex items-center space-x-1"
-                                >
-                                  {announcement.isActive ? (
-                                    <>
-                                      <XCircle className="h-4 w-4 text-red-600" />
-                                      <span className="text-xs text-red-600">Deactivate</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <CheckCircle className="h-4 w-4 text-green-600" />
-                                      <span className="text-xs text-green-600">Activate</span>
-                                    </>
-                                  )}
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDeleteAnnouncement(announcement._id)}
-                                  className="text-red-600 hover:text-red-700 flex items-center space-x-1"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                  <span className="text-xs">Delete</span>
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </article>
-                    ))}
+                {/* Stats */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                  <div className="text-center">
+                    <p className="font-medium text-gray-900">{announcement.views || 0}</p>
+                    <p className="text-xs text-gray-600">Views</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-medium text-gray-900">{announcement.clicks || 0}</p>
+                    <p className="text-xs text-gray-600">Clicks</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-medium text-gray-900">{announcement.views / (announcement.clicks || 1) * 100 || 0}%</p>
+                    <p className="text-xs text-gray-600">Engagement</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-medium text-gray-900">{announcement.views + announcement.clicks || 0}</p>
+                    <p className="text-xs text-gray-600">Reach</p>
+                  </div>
                 </div>
               </div>
-            )}
 
-            {/* Show regular announcements */}
-            {displayedAnnouncements.filter(a => a.priority !== 'urgent').length > 0 && (
-              <div className="space-y-6">
-                {displayedAnnouncements
-                  .filter(a => a.priority !== 'urgent')
-                  .map((announcement) => {
-                    const TypeIcon = getTypeIcon(announcement.type);
-                    return (
-                      <article key={announcement._id} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-                        <div className="flex flex-col md:flex-row">
-                          {/* Checkbox for bulk selection */}
-                          <div className="flex items-center p-4">
-                            <input
-                              type="checkbox"
-                              checked={selectedAnnouncements.includes(announcement._id)}
-                              onChange={() => handleSelectAnnouncement(announcement._id)}
-                              className="h-4 w-4 text-blue-600 border-blue-300 rounded focus:ring-blue-500"
-                            />
-                          </div>
-                          
-                          {/* Image Section - Left Side */}
-                          <div className="w-full md:w-64 h-48 md:h-auto bg-gray-100 relative overflow-hidden">
-                            {announcement.images && announcement.images.length > 0 ? (
-                              <img
-                                src={announcement.images[0].url}
-                                alt={announcement.images[0].alt || announcement.title}
-                                className="w-full h-full object-cover object-center"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
-                                {React.createElement(TypeIcon, { className: "h-12 w-12 text-gray-400" })}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Content Section - Right Side */}
-                          <div className="flex-1 p-6">
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex items-center space-x-2">
-                                <h3 className={`text-lg font-semibold ${getTypeColor(announcement.type)}`}>
-                                  {announcement.title}
-                                </h3>
-                                {getPriorityBadge(announcement.priority)}
-                              </div>
-                              <div className="flex items-center space-x-2 text-sm text-gray-500">
-                                <Calendar className="h-4 w-4" />
-                                <span>{new Date(announcement.startDate).toLocaleDateString()}</span>
-                              </div>
-                            </div>
-                            
-                            <div className="prose prose-gray max-w-none">
-                              <p className="text-gray-700 leading-relaxed mb-4">
-                                {announcement.content.length > 200 
-                                  ? `${announcement.content.substring(0, 200)}...` 
-                                  : announcement.content
-                                }
-                              </p>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-4 text-sm text-gray-500">
-                                {/* User-friendly target audience label */}
-                                <div className="flex items-center space-x-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
-                                  {React.createElement(getTargetAudienceIcon(announcement.targetAudience), { className: "h-3 w-3" })}
-                                  <span className="text-xs font-medium">{getTargetAudienceLabel(announcement.targetAudience)}</span>
-                                </div>
-                                
-                                {/* User-friendly display location label */}
-                                <div className="flex items-center space-x-1 bg-green-50 text-green-700 px-2 py-1 rounded-full">
-                                  <MapPin className="h-3 w-3" />
-                                  <span className="text-xs font-medium">{getDisplayLocationLabel(announcement.displayLocation)}</span>
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-center space-x-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleViewAnnouncementDetails(announcement._id)}
-                                  className="flex items-center space-x-1"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                  <span className="text-xs">View</span>
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => openEditModal(announcement)}
-                                  className="flex items-center space-x-1"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                  <span className="text-xs">Edit</span>
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleToggleAnnouncementStatus(announcement._id)}
-                                  className="flex items-center space-x-1"
-                                >
-                                  {announcement.isActive ? (
-                                    <XCircle className="h-4 w-4 text-red-600" />
-                                  ) : (
-                                    <CheckCircle className="h-4 w-4 text-green-600" />
-                                  )}
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDeleteAnnouncement(announcement._id)}
-                                  className="text-red-600 hover:text-red-700"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </article>
-                    );
-                  })}
+              {/* Actions */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between pt-4 border-t gap-4">
+                <div className="flex items-center space-x-2">
+                  <Badge className={getTypeColor(announcement.type)}>
+                    {getTypeIcon(announcement.type)}
+                    <span className="ml-1 capitalize text-xs">{announcement.type}</span>
+                  </Badge>
+                </div>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => openEditModal(announcement)}
+                    className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white text-sm w-full sm:w-auto"
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    <span className="hidden sm:inline">Edit</span>
+                    <span className="sm:hidden">Edit</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleToggleAnnouncementStatus(announcement._id)}
+                    className={`text-sm w-full sm:w-auto ${
+                      announcement.isActive 
+                        ? 'text-orange-600 border-orange-600 hover:bg-orange-600 hover:text-white' 
+                        : 'text-green-600 border-green-600 hover:bg-green-600 hover:text-white'
+                    }`}
+                  >
+                    <span className="hidden sm:inline">{announcement.isActive ? 'Deactivate' : 'Activate'}</span>
+                    <span className="sm:hidden">{announcement.isActive ? 'Deactivate' : 'Activate'}</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeleteAnnouncement(announcement._id)}
+                    className="text-red-600 border-red-600 hover:bg-red-600 hover:text-white text-sm w-full sm:w-auto"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    <span className="hidden sm:inline">Delete</span>
+                    <span className="sm:hidden">Delete</span>
+                  </Button>
+                </div>
               </div>
-            )}
-
-            {/* No announcements state */}
-            {announcements.length === 0 && (
-              <div className="text-center py-12">
-                <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No announcements found</h3>
-                <p className="text-gray-600">Create your first announcement to get started</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center">
-          <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-gray-600 text-center sm:text-left">
+            Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, totalAnnouncements)} of {totalAnnouncements} announcements
+          </p>
+          <div className="flex items-center space-x-2">
             <Button
               variant="outline"
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
+              className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               Previous
             </Button>
-            <span className="flex items-center px-4 py-2 text-sm">
+            <span className="text-sm text-gray-600">
               Page {currentPage} of {totalPages}
             </span>
             <Button
               variant="outline"
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
+              className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               Next
             </Button>
           </div>
+        </div>
+      )}
+
+      {announcements.length === 0 && !loading && (
+        <div className="text-center py-8 sm:py-12">
+          <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No Announcements Found</h3>
+          <p className="text-sm text-gray-600">
+            {searchTerm || typeFilter !== 'all' || priorityFilter !== 'all'
+              ? "Try adjusting your search or filter criteria"
+              : "Create your first announcement to get started"
+            }
+          </p>
+          <Button className="mt-4 bg-red-600 hover:bg-red-700" onClick={() => setShowCreateModal(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">Create Announcement</span>
+            <span className="sm:hidden">Create</span>
+          </Button>
         </div>
       )}
 
@@ -1344,16 +1197,15 @@ const AnnouncementManagement = () => {
               </div>
             </div>
             <div>
-              <Label htmlFor="images">Image *</Label>
+              <Label htmlFor="images">Image (Optional)</Label>
               <Input
                 id="images"
                 type="file"
                 accept="image/*"
                 onChange={handleImageUpload}
                 className="mt-1"
-                required
               />
-              <p className="text-xs text-gray-500 mt-1">Upload one image for the announcement</p>
+              <p className="text-xs text-gray-500 mt-1">Upload one image for the announcement (optional)</p>
               {createForm.images.length > 0 && (
                 <div className="mt-2 space-y-2">
                   {createForm.images.map((file, index) => (
@@ -1372,23 +1224,35 @@ const AnnouncementManagement = () => {
                   ))}
                 </div>
               )}
-              {createForm.images.length === 0 && (
-                <p className="text-xs text-red-500 mt-1">Please upload an image</p>
-              )}
               {createForm.images.length > 1 && (
                 <p className="text-xs text-red-500 mt-1">Please upload only one image</p>
               )}
             </div>
-            <div className="flex justify-end gap-2 pt-4">
+            <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
+              <div className="text-xs text-gray-500 mb-2 sm:mb-0">
+                {!createForm.title && <div>Title is required</div>}
+                {!createForm.content && <div>Content is required</div>}
+                {!createForm.endDate && <div>End date is required</div>}
+              </div>
               <Button
                 variant="outline"
                 onClick={() => setShowCreateModal(false)}
+                className="w-full sm:w-auto"
               >
                 Cancel
               </Button>
               <Button
-                onClick={handleCreateAnnouncement}
-                disabled={createLoading || !createForm.title || !createForm.content || !createForm.endDate || createForm.images.length !== 1}
+                onClick={() => {
+                  console.log('Create button clicked in modal');
+                  console.log('Form state:', createForm);
+                  console.log('createLoading:', createLoading);
+                  console.log('title:', createForm.title);
+                  console.log('content:', createForm.content);
+                  console.log('endDate:', createForm.endDate);
+                  handleCreateAnnouncement();
+                }}
+                disabled={createLoading}
+                className="w-full sm:w-auto"
               >
                 {createLoading ? (
                   <>
@@ -1571,16 +1435,18 @@ const AnnouncementManagement = () => {
                 </div>
               )}
             </div>
-            <div className="flex justify-end gap-2 pt-4">
+            <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
               <Button
                 variant="outline"
                 onClick={() => setShowEditModal(false)}
+                className="w-full sm:w-auto"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleEditAnnouncement}
                 disabled={editLoading || !editForm.title || !editForm.content || !editForm.endDate}
+                className="w-full sm:w-auto"
               >
                 {editLoading ? (
                   <>

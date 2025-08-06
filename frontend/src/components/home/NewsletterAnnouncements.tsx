@@ -145,7 +145,7 @@ const NewsletterAnnouncements = () => {
   };
 
   const getTargetAudienceIcon = (targetAudience: string) => {
-    return <Users className="h-3 w-3" />;
+        return <Users className="h-3 w-3" />;
   };
 
   const handleReadMore = (announcement: Announcement) => {
@@ -201,8 +201,8 @@ const NewsletterAnnouncements = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-2">
-              <Megaphone className="h-6 w-6 text-gray-600" />
-              <h2 className="text-2xl font-bold text-gray-900">Latest News & Updates</h2>
+            <Megaphone className="h-6 w-6 text-gray-600" />
+            <h2 className="text-2xl font-bold text-gray-900">Latest News & Updates</h2>
               {announcements.length > 0 && (
                 <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">
                   {announcements.length} {announcements.length === 1 ? 'announcement' : 'announcements'}
@@ -321,75 +321,75 @@ const NewsletterAnnouncements = () => {
                 .map((announcement) => {
                   const TypeIcon = getTypeIcon(announcement.type);
                   return (
-                    <article key={announcement._id} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-                      <div className="flex flex-col md:flex-row">
-                        {/* Image Section - Left Side */}
-                        <div className="w-full md:w-64 h-48 md:h-auto bg-gray-100 relative overflow-hidden">
-                          {announcement.images && announcement.images.length > 0 ? (
-                            <img
-                              src={announcement.images[0].url}
-                              alt={announcement.images[0].alt || announcement.title}
+            <article key={announcement._id} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+              <div className="flex flex-col md:flex-row">
+                {/* Image Section - Left Side */}
+                <div className="w-full md:w-64 h-48 md:h-auto bg-gray-100 relative overflow-hidden">
+                  {announcement.images && announcement.images.length > 0 ? (
+                    <img
+                      src={announcement.images[0].url}
+                      alt={announcement.images[0].alt || announcement.title}
                               className="w-full h-full object-cover object-center"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
                               <TypeIcon className="h-12 w-12 text-gray-400" />
-                            </div>
-                          )}
-                        </div>
+                    </div>
+                  )}
+                </div>
 
-                        {/* Content Section - Right Side */}
-                        <div className="flex-1 p-6">
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex items-center space-x-2">
-                              <h3 className={`text-lg font-semibold ${getTypeColor(announcement.type)}`}>
-                                {announcement.title}
-                              </h3>
-                              {getPriorityBadge(announcement.priority)}
-                            </div>
-                            <div className="flex items-center space-x-2 text-sm text-gray-500">
-                              <Calendar className="h-4 w-4" />
-                              <span>{new Date(announcement.startDate).toLocaleDateString()}</span>
-                            </div>
-                          </div>
-                          
-                          <div className="prose prose-gray max-w-none">
-                            <p className="text-gray-700 leading-relaxed mb-4">
-                              {announcement.content.length > 200 
-                                ? `${announcement.content.substring(0, 200)}...` 
-                                : announcement.content
-                              }
-                            </p>
-                          </div>
+                {/* Content Section - Right Side */}
+                <div className="flex-1 p-6">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <h3 className={`text-lg font-semibold ${getTypeColor(announcement.type)}`}>
+                        {announcement.title}
+                      </h3>
+                      {getPriorityBadge(announcement.priority)}
+                    </div>
+                    <div className="flex items-center space-x-2 text-sm text-gray-500">
+                      <Calendar className="h-4 w-4" />
+                      <span>{new Date(announcement.startDate).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="prose prose-gray max-w-none">
+                    <p className="text-gray-700 leading-relaxed mb-4">
+                      {announcement.content.length > 200 
+                        ? `${announcement.content.substring(0, 200)}...` 
+                        : announcement.content
+                      }
+                    </p>
+                  </div>
 
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4 text-sm text-gray-500">
-                              {/* User-friendly target audience label */}
-                              <div className="flex items-center space-x-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
-                                {getTargetAudienceIcon(announcement.targetAudience)}
-                                <span className="text-xs font-medium">{getTargetAudienceLabel(announcement.targetAudience)}</span>
-                              </div>
-                              
-                              {/* User-friendly display location label */}
-                              <div className="flex items-center space-x-1 bg-green-50 text-green-700 px-2 py-1 rounded-full">
-                                <MapPin className="h-3 w-3" />
-                                <span className="text-xs font-medium">{getDisplayLocationLabel(announcement.displayLocation)}</span>
-                              </div>
-                            </div>
-                            
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleReadMore(announcement)}
-                              className="flex items-center space-x-2 border-gray-300 text-gray-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-700 hover:text-white hover:border-red-600 hover:scale-105 transition-all duration-300 group relative"
-                            >
-                              <span className="relative z-10">Read More</span>
-                              <ExternalLink className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-300 relative z-10" />
-                            </Button>
-                          </div>
-                        </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4 text-sm text-gray-500">
+                      {/* User-friendly target audience label */}
+                      <div className="flex items-center space-x-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
+                        {getTargetAudienceIcon(announcement.targetAudience)}
+                        <span className="text-xs font-medium">{getTargetAudienceLabel(announcement.targetAudience)}</span>
                       </div>
-                    </article>
+                      
+                      {/* User-friendly display location label */}
+                      <div className="flex items-center space-x-1 bg-green-50 text-green-700 px-2 py-1 rounded-full">
+                        <MapPin className="h-3 w-3" />
+                        <span className="text-xs font-medium">{getDisplayLocationLabel(announcement.displayLocation)}</span>
+                      </div>
+                    </div>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleReadMore(announcement)}
+                      className="flex items-center space-x-2 border-gray-300 text-gray-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-700 hover:text-white hover:border-red-600 hover:scale-105 transition-all duration-300 group relative"
+                    >
+                      <span className="relative z-10">Read More</span>
+                      <ExternalLink className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-300 relative z-10" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </article>
                   );
                 })}
             </div>
