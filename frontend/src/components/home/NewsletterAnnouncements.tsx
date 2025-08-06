@@ -170,7 +170,7 @@ const NewsletterAnnouncements = () => {
 
   if (loading) {
     return (
-      <section className="bg-gray-50 py-12">
+      <section className="bg-gray-50 py-8 sm:py-12">
         <div className="container mx-auto px-4">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
@@ -190,7 +190,7 @@ const NewsletterAnnouncements = () => {
   }
 
   return (
-    <section className="bg-gray-50 py-12 relative">
+    <section className="bg-gray-50 py-8 sm:py-12 relative">
       {/* Fading border effect at top - fades to bg-secondary/30 */}
       <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-secondary/30 via-secondary/20 to-transparent"></div>
       
@@ -198,13 +198,13 @@ const NewsletterAnnouncements = () => {
       <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-red-50 via-red-25 to-transparent"></div>
       
       <div className="container mx-auto px-4 relative z-10">
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 space-y-3 sm:space-y-0">
             <div className="flex items-center space-x-2">
-            <Megaphone className="h-6 w-6 text-gray-600" />
-            <h2 className="text-2xl font-bold text-gray-900">Latest News & Updates</h2>
+              <Megaphone className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Latest News & Updates</h2>
               {announcements.length > 0 && (
-                <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">
+                <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-md">
                   {announcements.length} {announcements.length === 1 ? 'announcement' : 'announcements'}
                 </span>
               )}
@@ -214,7 +214,7 @@ const NewsletterAnnouncements = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowAll(!showAll)}
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-2 w-full sm:w-auto"
               >
                 {showAll ? (
                   <>
@@ -230,15 +230,15 @@ const NewsletterAnnouncements = () => {
               </Button>
             )}
           </div>
-          <p className="text-gray-600">Stay informed with our latest announcements and important updates.</p>
+          <p className="text-sm sm:text-base text-gray-600">Stay informed with our latest announcements and important updates.</p>
         </div>
 
         <div className="max-w-4xl mx-auto">
           {/* Show urgent announcements first */}
           {announcements.filter(a => a.priority === 'urgent').length > 0 && (
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-red-700 mb-4 flex items-center">
-                <AlertTriangle className="h-5 w-5 mr-2" />
+              <h3 className="text-base sm:text-lg font-semibold text-red-700 mb-4 flex items-center">
+                <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                 Urgent Announcements
               </h3>
               <div className="space-y-4">
@@ -247,9 +247,9 @@ const NewsletterAnnouncements = () => {
                   .slice(0, showAll ? undefined : 2)
                   .map((announcement) => (
                     <article key={announcement._id} className="bg-red-50 border border-red-200 rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-                      <div className="flex flex-col md:flex-row">
+                      <div className="flex flex-col lg:flex-row">
                         {/* Image Section */}
-                        <div className="w-full md:w-64 h-48 md:h-auto bg-red-100 relative overflow-hidden">
+                        <div className="w-full lg:w-64 h-48 lg:h-auto bg-red-100 relative overflow-hidden">
                           {announcement.images && announcement.images.length > 0 ? (
                             <img
                               src={announcement.images[0].url}
@@ -258,28 +258,28 @@ const NewsletterAnnouncements = () => {
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-50 to-pink-50">
-                              <AlertTriangle className="h-12 w-12 text-red-400" />
+                              <AlertTriangle className="h-8 w-8 sm:h-12 sm:w-12 text-red-400" />
                             </div>
                           )}
                         </div>
 
                         {/* Content Section */}
-                        <div className="flex-1 p-6">
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex items-center space-x-2">
-                              <h3 className="text-lg font-semibold text-red-700">
+                        <div className="flex-1 p-4 sm:p-6">
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-3 space-y-2 sm:space-y-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-base sm:text-lg font-semibold text-red-700">
                                 {announcement.title}
                               </h3>
                               {getPriorityBadge(announcement.priority)}
                             </div>
-                            <div className="flex items-center space-x-2 text-sm text-gray-500">
-                              <Calendar className="h-4 w-4" />
+                            <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-500">
+                              <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
                               <span>{new Date(announcement.startDate).toLocaleDateString()}</span>
                             </div>
                           </div>
                           
                           <div className="prose prose-gray max-w-none">
-                            <p className="text-gray-700 leading-relaxed mb-4">
+                            <p className="text-sm sm:text-base text-gray-700 leading-relaxed mb-4">
                               {announcement.content.length > 200 
                                 ? `${announcement.content.substring(0, 200)}...` 
                                 : announcement.content
@@ -287,8 +287,8 @@ const NewsletterAnnouncements = () => {
                             </p>
                           </div>
 
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4 text-sm text-gray-500">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                            <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500">
                               <div className="flex items-center space-x-1 bg-red-100 text-red-700 px-2 py-1 rounded-full">
                                 {getTargetAudienceIcon(announcement.targetAudience)}
                                 <span className="text-xs font-medium">{getTargetAudienceLabel(announcement.targetAudience)}</span>
@@ -299,7 +299,7 @@ const NewsletterAnnouncements = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => handleReadMore(announcement)}
-                              className="flex items-center space-x-2 border-red-300 text-red-700 hover:bg-red-600 hover:text-white hover:border-red-600"
+                              className="flex items-center space-x-2 border-red-300 text-red-700 hover:bg-red-600 hover:text-white hover:border-red-600 w-full sm:w-auto"
                             >
                               <span>Read More</span>
                               <ExternalLink className="h-4 w-4" />
@@ -315,16 +315,16 @@ const NewsletterAnnouncements = () => {
 
           {/* Show regular announcements */}
           {displayedAnnouncements.filter(a => a.priority !== 'urgent').length > 0 && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {displayedAnnouncements
                 .filter(a => a.priority !== 'urgent')
                 .map((announcement) => {
                   const TypeIcon = getTypeIcon(announcement.type);
                   return (
             <article key={announcement._id} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-              <div className="flex flex-col md:flex-row">
+              <div className="flex flex-col lg:flex-row">
                 {/* Image Section - Left Side */}
-                <div className="w-full md:w-64 h-48 md:h-auto bg-gray-100 relative overflow-hidden">
+                <div className="w-full lg:w-64 h-48 lg:h-auto bg-gray-100 relative overflow-hidden">
                   {announcement.images && announcement.images.length > 0 ? (
                     <img
                       src={announcement.images[0].url}
@@ -333,28 +333,28 @@ const NewsletterAnnouncements = () => {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
-                              <TypeIcon className="h-12 w-12 text-gray-400" />
+                              <TypeIcon className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400" />
                     </div>
                   )}
                 </div>
 
                 {/* Content Section - Right Side */}
-                <div className="flex-1 p-6">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center space-x-2">
-                      <h3 className={`text-lg font-semibold ${getTypeColor(announcement.type)}`}>
+                <div className="flex-1 p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-3 space-y-2 sm:space-y-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className={`text-base sm:text-lg font-semibold ${getTypeColor(announcement.type)}`}>
                         {announcement.title}
                       </h3>
                       {getPriorityBadge(announcement.priority)}
                     </div>
-                    <div className="flex items-center space-x-2 text-sm text-gray-500">
-                      <Calendar className="h-4 w-4" />
+                    <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-500">
+                      <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
                       <span>{new Date(announcement.startDate).toLocaleDateString()}</span>
                     </div>
                   </div>
                   
                   <div className="prose prose-gray max-w-none">
-                    <p className="text-gray-700 leading-relaxed mb-4">
+                    <p className="text-sm sm:text-base text-gray-700 leading-relaxed mb-4">
                       {announcement.content.length > 200 
                         ? `${announcement.content.substring(0, 200)}...` 
                         : announcement.content
@@ -362,8 +362,8 @@ const NewsletterAnnouncements = () => {
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 text-sm text-gray-500">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                    <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500">
                       {/* User-friendly target audience label */}
                       <div className="flex items-center space-x-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
                         {getTargetAudienceIcon(announcement.targetAudience)}
@@ -381,7 +381,7 @@ const NewsletterAnnouncements = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleReadMore(announcement)}
-                      className="flex items-center space-x-2 border-gray-300 text-gray-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-700 hover:text-white hover:border-red-600 hover:scale-105 transition-all duration-300 group relative"
+                      className="flex items-center space-x-2 border-gray-300 text-gray-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-700 hover:text-white hover:border-red-600 hover:scale-105 transition-all duration-300 group relative w-full sm:w-auto"
                     >
                       <span className="relative z-10">Read More</span>
                       <ExternalLink className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-300 relative z-10" />
@@ -397,13 +397,14 @@ const NewsletterAnnouncements = () => {
 
           {/* Pagination */}
           {!showAll && totalPages > 1 && (
-            <div className="flex justify-center mt-8">
-              <div className="flex items-center space-x-2">
+            <div className="flex justify-center mt-6 sm:mt-8">
+              <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
+                  className="w-full sm:w-auto"
                 >
                   Previous
                 </Button>
@@ -415,6 +416,7 @@ const NewsletterAnnouncements = () => {
                   size="sm"
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
+                  className="w-full sm:w-auto"
                 >
                   Next
                 </Button>
@@ -428,7 +430,7 @@ const NewsletterAnnouncements = () => {
               <Button
                 variant="outline"
                 onClick={() => setShowAll(true)}
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-2 w-full sm:w-auto"
               >
                 <ChevronDown className="h-4 w-4" />
                 <span>Show All {announcements.length} Announcements</span>
